@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>25:00 Pomodoro Desk</title>
+  <style>
+    :root, body[data-theme="dark"]{
+      --bg:#101218; --panel:#181b22; --panel2:#20242d; --field:#11141b;
+      --text:#f6f7fb; --muted:#a4adbb; --line:#303541;
+      --accent:#ff5f57; --accent2:#f2a65a; --ok:#62d394; --warn:#ffd166;
+      --body-bg:linear-gradient(135deg,#101218 0%,#151821 58%,#191611 100%);
+      --app-bg:rgba(24,27,34,.96); --side-bg:rgba(17,20,27,.45);
+      --card-bg:#141821; --player-bg:#0d0f15; --hover-line:#414856;
+      --shadow:0 24px 70px rgba(0,0,0,.34);
+    }
+    body[data-theme="light"]{
+      --bg:#f7f5f1; --panel:#ffffff; --panel2:#ece8df; --field:#fffdfa;
+      --text:#26231f; --muted:#716b62; --line:#ddd4c8;
+      --accent:#e85d4f; --accent2:#e7a95a; --ok:#2f9e6d; --warn:#ae7d00;
+      --body-bg:linear-gradient(135deg,#fbfaf7 0%,#f2ede5 58%,#fff7ed 100%);
+      --app-bg:rgba(255,255,255,.96); --side-bg:rgba(247,244,238,.7);
+      --card-bg:#fffaf2; --player-bg:#f1ece4; --hover-line:#cfc5b7;
+      --shadow:0 24px 70px rgba(72,55,40,.13);
+    }
+    body[data-theme="tomato"]{
+      --bg:#fff6f1; --panel:#fffaf6; --panel2:#ffe4d8; --field:#fffefd;
+      --text:#3c2924; --muted:#8b6d64; --line:#f1c9bd;
+      --accent:#ef7465; --accent2:#f4b082; --ok:#4fa87b; --warn:#b47a26;
+      --body-bg:linear-gradient(135deg,#fff8f3 0%,#ffe8df 56%,#fff3dc 100%);
+      --app-bg:rgba(255,250,246,.97); --side-bg:rgba(255,237,229,.62);
+      --card-bg:#fff2ea; --player-bg:#f8ddd4; --hover-line:#eab7a8;
+      --shadow:0 24px 70px rgba(156,78,57,.16);
+    }
+    @media (prefers-color-scheme: light){
+      body[data-theme="system"]{
+        --bg:#f7f5f1; --panel:#ffffff; --panel2:#ece8df; --field:#fffdfa;
+        --text:#26231f; --muted:#716b62; --line:#ddd4c8;
+        --accent:#e85d4f; --accent2:#e7a95a; --ok:#2f9e6d; --warn:#ae7d00;
+        --body-bg:linear-gradient(135deg,#fbfaf7 0%,#f2ede5 58%,#fff7ed 100%);
+        --app-bg:rgba(255,255,255,.96); --side-bg:rgba(247,244,238,.7);
+        --card-bg:#fffaf2; --player-bg:#f1ece4; --hover-line:#cfc5b7;
+        --shadow:0 24px 70px rgba(72,55,40,.13);
+      }
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;
+      background:var(--body-bg);
+      color:var(--text); padding:20px; display:grid; place-items:center;
+    }
+    button,input,select{font:inherit}
+    button{
+      border:1px solid transparent; border-radius:8px; padding:10px 12px; cursor:pointer;
+      background:var(--panel2); color:var(--text); transition:transform .15s ease,filter .15s ease,border-color .15s ease;
+      min-height:42px;
+    }
+    button:hover{transform:translateY(-1px); filter:brightness(1.08); border-color:var(--hover-line)}
+    button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{
+      outline:2px solid var(--accent2); outline-offset:2px;
+    }
+    input,select{
+      width:100%; background:var(--field); color:var(--text); border:1px solid var(--line);
+      border-radius:8px; padding:10px 11px; min-height:42px;
+    }
+    label{font-size:12px; color:var(--muted); display:block}
+    label span{display:block; margin-bottom:6px}
+    .app{
+      width:min(980px,100%); background:var(--app-bg); border:1px solid var(--line);
+      border-radius:8px; box-shadow:var(--shadow); overflow:hidden;
+    }
+    .header{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line)}
+    h1{font-size:18px; margin:0; letter-spacing:0}
+    .badge{font-size:12px; color:var(--muted); white-space:nowrap}
+    .layout{display:grid; grid-template-columns:minmax(0,1fr) 340px}
+    .main,.side{padding:20px}
+    .side{border-left:1px solid var(--line); background:var(--side-bg)}
+    .modes{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px}
+    .mode.active{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-weight:750}
+    .task-row{display:grid; grid-template-columns:minmax(0,1fr) 46px; gap:8px}
+    .icon-btn{padding:0; display:grid; place-items:center; font-size:18px}
+    .timer{text-align:center; font-variant-numeric:tabular-nums; font-weight:850; font-size:clamp(64px,14vw,116px); line-height:1; letter-spacing:0; margin:28px 0 14px}
+    .status{text-align:center; color:var(--muted); min-height:1.5em; margin-bottom:18px}
+    .primary{display:grid; grid-template-columns:1.6fr 1fr 1fr; gap:8px}
+    .start{background:linear-gradient(135deg,var(--accent),var(--accent2)); font-weight:800}
+    .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0}
+    .card{background:var(--card-bg); border:1px solid var(--line); border-radius:8px; padding:12px}
+    .label{font-size:12px; color:var(--muted); margin-bottom:5px}
+    .value{font-size:22px; font-weight:780; font-variant-numeric:tabular-nums}
+    .toolbar{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+    .links{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px}
+    .links a{display:block; text-align:center; text-decoration:none; color:var(--text); background:var(--panel2); padding:11px; border-radius:8px; min-height:42px}
+    .section{border-top:1px solid var(--line); padding-top:16px; margin-top:16px}
+    details{border-top:1px solid var(--line); margin-top:16px; padding-top:14px}
+    summary{cursor:pointer; color:var(--muted); user-select:none}
+    .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px}
+    .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px}
+    .toggles{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:13px; color:var(--muted)}
+    .toggles label{display:flex; align-items:center; gap:7px}
+    .toggles input{width:auto; min-height:auto}
+    .media-row{display:grid; grid-template-columns:minmax(0,1fr) 46px; gap:8px; margin-top:12px}
+    .player{margin-top:10px; aspect-ratio:16/9; background:var(--player-bg); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+    .player iframe{width:100%; height:100%; border:0; display:block}
+    .player.empty{display:none}
+    .log-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px}
+    .log-head h2{font-size:14px; margin:0}
+    .log-list{display:grid; gap:8px; max-height:345px; overflow:auto; padding-right:4px}
+    .log-item{border:1px solid var(--line); background:var(--card-bg); border-radius:8px; padding:10px}
+    .log-top{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted)}
+    .log-task{font-size:14px; margin-top:4px; overflow-wrap:anywhere}
+    .empty-log{color:var(--muted); font-size:13px; padding:14px 0}
+    .small{font-size:12px; color:var(--muted); line-height:1.55}
+    .ok{color:var(--ok)}
+    .warn{color:var(--warn)}
+    #importFile{display:none}
+    @media(max-width:820px){body{padding:12px}.layout{grid-template-columns:1fr}.side{border-left:0; border-top:1px solid var(--line)}}
+    @media(max-width:540px){.header{padding:16px}.main,.side{padding:16px}.primary,.toolbar,.grid-3{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.start{grid-column:auto}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="header">
+      <h1>Pomodoro Desk</h1>
+      <div class="badge" id="envBadge">local</div>
+    </div>
+
+    <div class="layout">
+      <section class="main" aria-label="timer">
+        <div class="modes">
+          <button class="mode active" data-mode="focus">集中</button>
+          <button class="mode" data-mode="short">短い休憩</button>
+          <button class="mode" data-mode="long">長い休憩</button>
+        </div>
+
+        <div class="task-row">
+          <input id="task" placeholder="いま何をやる？ 例：試験用データ収集" />
+          <button id="pinTask" class="icon-btn" title="タスクをログに残す">＋</button>
+        </div>
+
+        <div id="timer" class="timer">25:00</div>
+        <div id="status" class="status">集中する準備ができています</div>
+
+        <div class="primary">
+          <button id="start" class="start">START</button>
+          <button id="reset">RESET</button>
+          <button id="skip">SKIP</button>
+        </div>
+
+        <div class="stats">
+          <div class="card"><div class="label">今日の集中</div><div class="value"><span id="todayCount">0</span></div></div>
+          <div class="card"><div class="label">セット進捗</div><div class="value" id="roundCount">0 / 4</div></div>
+          <div class="card"><div class="label">今日の分数</div><div class="value"><span id="todayMinutes">0</span>m</div></div>
+        </div>
+
+        <div class="toolbar">
+          <button id="pip" title="小窓">小窓</button>
+          <button id="notify" title="通知">通知</button>
+          <button id="clearToday" title="今日のカウントだけリセット">今日リセット</button>
+        </div>
+
+        <div class="section">
+          <label><span>YouTube / YouTube Music URL</span></label>
+          <div class="media-row">
+            <input id="mediaUrl" placeholder="https://www.youtube.com/watch?v=..." />
+            <button id="openMedia" class="icon-btn" title="開く">↗</button>
+          </div>
+          <div id="player" class="player empty"></div>
+          <div class="links">
+            <a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a>
+            <a href="https://music.youtube.com/" target="_blank" rel="noopener">YouTube Music</a>
+          </div>
+        </div>
+
+        <details>
+          <summary>設定</summary>
+          <div class="grid-3">
+            <label><span>集中（分）</span><input id="focusMin" type="number" min="1" max="180" value="25"></label>
+            <label><span>短い休憩（分）</span><input id="shortMin" type="number" min="1" max="60" value="5"></label>
+            <label><span>長い休憩（分）</span><input id="longMin" type="number" min="1" max="120" value="15"></label>
+          </div>
+          <div class="grid-2">
+            <label><span>長い休憩までのセット数</span><input id="targetRounds" type="number" min="1" max="12" value="4"></label>
+            <label><span>ログ表示件数</span><input id="logLimit" type="number" min="5" max="100" value="20"></label>
+          </div>
+          <div class="grid-2">
+            <label><span>配色</span>
+              <select id="theme">
+                <option value="dark">ダーク</option>
+                <option value="light">ライト</option>
+                <option value="system">PC設定追従</option>
+                <option value="tomato">柔らかいトマト色</option>
+              </select>
+            </label>
+          </div>
+          <div class="toggles">
+            <label><input id="autoNext" type="checkbox"> 終了後に次を自動開始</label>
+            <label><input id="soundOn" type="checkbox" checked> 終了音</label>
+          </div>
+        </details>
+
+        <div class="small section" id="help">ログはこのブラウザに保存されます。</div>
+      </section>
+
+      <aside class="side" aria-label="log">
+        <div class="log-head">
+          <h2>ログ</h2>
+          <span class="small" id="logCount">0件</span>
+        </div>
+        <div class="grid-2">
+          <button id="exportCsv">CSV</button>
+          <button id="exportJson">JSON</button>
+          <button id="shareJson">共有</button>
+          <button id="importJson">読込</button>
+        </div>
+        <input id="importFile" type="file" accept="application/json,.json">
+        <div class="grid-2">
+          <button id="openDrive">Drive</button>
+          <button id="clearLogs">全ログ削除</button>
+        </div>
+        <div id="logList" class="log-list section"></div>
+      </aside>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const els = {
+    timer: $("#timer"), status: $("#status"), start: $("#start"), reset: $("#reset"),
+    skip: $("#skip"), pip: $("#pip"), notify: $("#notify"), task: $("#task"),
+    pinTask: $("#pinTask"), todayCount: $("#todayCount"), roundCount: $("#roundCount"),
+    todayMinutes: $("#todayMinutes"), clearToday: $("#clearToday"),
+    focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
+    targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
+    theme: $("#theme"),
+    autoNext: $("#autoNext"), soundOn: $("#soundOn"), envBadge: $("#envBadge"),
+    help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"),
+    player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
+    exportCsv: $("#exportCsv"), exportJson: $("#exportJson"), shareJson: $("#shareJson"),
+    importJson: $("#importJson"), importFile: $("#importFile"),
+    openDrive: $("#openDrive"), clearLogs: $("#clearLogs")
+  };
+
+  const KEY = "pomodoro-desk-v2";
+  const oldKey = "pomodoro-mini-v1";
+  const dateKey = () => new Date().toLocaleDateString("sv-SE");
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || min));
+
+  let saved = loadState();
+  let mode = saved.mode || "focus";
+  let running = false;
+  let endAt = null;
+  let startedAt = null;
+  let remainingMs = null;
+  let interval = null;
+  let pipWindow = null;
+
+  hydrate();
+  remainingMs = durationMs(mode);
+  save();
+  render();
+
+  function loadState(){
+    let state = null;
+    try { state = JSON.parse(localStorage.getItem(KEY) || "null"); } catch {}
+    if (!state) {
+      try {
+        const old = JSON.parse(localStorage.getItem(oldKey) || "null");
+        if (old) state = {...old, targetRounds:4, logLimit:20, logs:[]};
+      } catch {}
+    }
+    state ||= {};
+    if (state.date !== dateKey()) {
+      state.date = dateKey();
+      state.today = 0;
+      state.round = 0;
+      state.todayMinutes = 0;
+    }
+    state.logs ||= [];
+    return state;
+  }
+
+  function hydrate(){
+    els.focusMin.value = saved.focusMin || 25;
+    els.shortMin.value = saved.shortMin || 5;
+    els.longMin.value = saved.longMin || 15;
+    els.targetRounds.value = saved.targetRounds || 4;
+    els.logLimit.value = saved.logLimit || 20;
+    els.theme.value = saved.theme || "dark";
+    applyTheme(els.theme.value);
+    els.task.value = saved.task || "";
+    els.mediaUrl.value = saved.mediaUrl || "";
+    els.autoNext.checked = !!saved.autoNext;
+    els.soundOn.checked = saved.soundOn !== false;
+  }
+
+  function statePayload(){
+    return {
+      date: dateKey(),
+      today: saved.today || 0,
+      round: saved.round || 0,
+      todayMinutes: saved.todayMinutes || 0,
+      mode,
+      focusMin: clamp(els.focusMin.value, 1, 180),
+      shortMin: clamp(els.shortMin.value, 1, 60),
+      longMin: clamp(els.longMin.value, 1, 120),
+      targetRounds: clamp(els.targetRounds.value, 1, 12),
+      logLimit: clamp(els.logLimit.value, 5, 100),
+      theme: els.theme.value,
+      task: els.task.value,
+      mediaUrl: els.mediaUrl.value,
+      autoNext: els.autoNext.checked,
+      soundOn: els.soundOn.checked,
+      logs: saved.logs || []
+    };
+  }
+
+  function save(){
+    saved = {...saved, ...statePayload()};
+    localStorage.setItem(KEY, JSON.stringify(saved));
+  }
+
+  function applyTheme(theme){
+    document.body.dataset.theme = ["dark","light","system","tomato"].includes(theme) ? theme : "dark";
+  }
+
+  function durationMs(m = mode){
+    const mins = m === "focus" ? els.focusMin.value : m === "short" ? els.shortMin.value : els.longMin.value;
+    return clamp(mins, 1, 180) * 60 * 1000;
+  }
+
+  function fmt(ms){
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function currentRemaining(){
+    return running ? Math.max(0, endAt - Date.now()) : (remainingMs ?? durationMs());
+  }
+
+  function modeLabel(value = mode){
+    return value === "focus" ? "集中" : value === "short" ? "短い休憩" : "長い休憩";
+  }
+
+  function render(){
+    const ms = currentRemaining();
+    const text = fmt(ms);
+    const target = clamp(els.targetRounds.value, 1, 12);
+    els.timer.textContent = text;
+    document.title = `${text} ${modeLabel()}`;
+    els.start.textContent = running ? "PAUSE" : "START";
+    els.status.textContent = running
+      ? `${modeLabel()}中${els.task.value ? " - " + els.task.value : ""}`
+      : `${modeLabel()} - ${ms === durationMs() ? "準備完了" : "一時停止"}`;
+    els.todayCount.textContent = saved.today || 0;
+    els.roundCount.textContent = `${saved.round || 0} / ${target}`;
+    els.todayMinutes.textContent = saved.todayMinutes || 0;
+    els.logCount.textContent = `${(saved.logs || []).length}件`;
+    $$(".mode").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+    renderLogs();
+    renderPiP(text);
+  }
+
+  function renderLogs(){
+    const limit = clamp(els.logLimit.value, 5, 100);
+    const logs = [...(saved.logs || [])].slice(-limit).reverse();
+    if (!logs.length) {
+      els.logList.innerHTML = '<div class="empty-log">まだログはありません。</div>';
+      return;
+    }
+    els.logList.innerHTML = logs.map(log => `
+      <div class="log-item">
+        <div class="log-top">
+          <span>${escapeHtml(log.date)} ${escapeHtml(log.time)}</span>
+          <span>${escapeHtml(log.mode)} / ${log.minutes}m</span>
+        </div>
+        <div class="log-task">${escapeHtml(log.task || "無題")}</div>
+      </div>
+    `).join("");
+  }
+
+  function escapeHtml(text){
+    return String(text).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function setMode(next, preserve = false){
+    mode = next;
+    running = false;
+    endAt = null;
+    startedAt = null;
+    remainingMs = preserve ? remainingMs : durationMs(next);
+    stopInterval();
+    save();
+    render();
+  }
+
+  function start(){
+    if (running) return pause();
+    const rem = currentRemaining() || durationMs();
+    endAt = Date.now() + rem;
+    startedAt ||= Date.now();
+    remainingMs = null;
+    running = true;
+    interval = setInterval(tick, 250);
+    render();
+  }
+
+  function pause(){
+    if (!running) return;
+    remainingMs = Math.max(0, endAt - Date.now());
+    running = false;
+    endAt = null;
+    stopInterval();
+    render();
+  }
+
+  function reset(){
+    running = false;
+    endAt = null;
+    startedAt = null;
+    remainingMs = durationMs();
+    stopInterval();
+    render();
+  }
+
+  function stopInterval(){
+    if (interval) clearInterval(interval);
+    interval = null;
+  }
+
+  function tick(){
+    if (!running) return;
+    if (Date.now() >= endAt) complete();
+    else render();
+  }
+
+  function complete(){
+    const finished = mode;
+    const minutes = Math.round(durationMs(finished) / 60000);
+    running = false;
+    stopInterval();
+    endAt = null;
+    beep();
+    notifyFinished();
+
+    if (finished === "focus") {
+      saved.today = (saved.today || 0) + 1;
+      saved.todayMinutes = (saved.todayMinutes || 0) + minutes;
+      saved.round = (saved.round || 0) + 1;
+      addLog({mode:modeLabel(finished), minutes, task:els.task.value, startedAt});
+      const target = clamp(els.targetRounds.value, 1, 12);
+      const next = saved.round >= target ? "long" : "short";
+      if (saved.round >= target) saved.round = 0;
+      mode = next;
+    } else {
+      addLog({mode:modeLabel(finished), minutes, task:"休憩", startedAt});
+      mode = "focus";
+    }
+
+    startedAt = null;
+    remainingMs = durationMs(mode);
+    save();
+    render();
+    if (els.autoNext.checked) start();
+  }
+
+  function addLog({mode, minutes, task, startedAt}){
+    const now = new Date();
+    const start = startedAt ? new Date(startedAt) : new Date(now.getTime() - minutes * 60000);
+    saved.logs = [...(saved.logs || []), {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(now.getTime()),
+      date: now.toLocaleDateString("sv-SE"),
+      time: now.toLocaleTimeString("ja-JP", {hour:"2-digit", minute:"2-digit"}),
+      mode,
+      minutes,
+      task: task || "",
+      startedAt: start.toISOString(),
+      endedAt: now.toISOString()
+    }].slice(-1000);
+  }
+
+  function skip(){
+    running = false;
+    stopInterval();
+    endAt = null;
+    startedAt = null;
+    const target = clamp(els.targetRounds.value, 1, 12);
+    mode = mode === "focus" ? ((saved.round || 0) >= target - 1 ? "long" : "short") : "focus";
+    remainingMs = durationMs(mode);
+    save();
+    render();
+  }
+
+  function beep(){
+    if (!els.soundOn.checked) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.frequency.value = 720;
+      g.gain.value = .08;
+      o.start();
+      setTimeout(() => { o.stop(); ctx.close(); }, 420);
+    } catch {}
+  }
+
+  function notifyFinished(){
+    if (Notification.permission === "granted") {
+      new Notification(mode === "focus" ? "集中おつかれさま" : "休憩終了", {
+        body: els.task.value || (mode === "focus" ? "次は休憩です。" : "集中に戻ります。")
+      });
+    }
+  }
+
+  async function requestNotify(){
+    if (!("Notification" in window)) {
+      setHelp("このブラウザは通知APIに対応していません。", "warn");
+      return;
+    }
+    const p = await Notification.requestPermission();
+    els.notify.textContent = p === "granted" ? "通知ON" : "通知OFF";
+  }
+
+  async function openPiP(){
+    if (!("documentPictureInPicture" in window)) {
+      setHelp("小窓はChrome系ブラウザでHTTPSまたはlocalhostから開くと利用できます。", "warn");
+      return;
+    }
+    try {
+      if (pipWindow && !pipWindow.closed) {
+        pipWindow.focus();
+        return;
+      }
+      pipWindow = await documentPictureInPicture.requestWindow({width:330, height:230});
+      const d = pipWindow.document;
+      d.head.innerHTML = `
+        <meta charset="utf-8">
+        <style>
+          body{margin:0;background:#101218;color:#f6f7fb;font-family:system-ui,"Noto Sans JP",sans-serif;display:grid;place-items:center;height:100vh}
+          .box{text-align:center;width:100%;padding:18px}
+          #pipTime{font-size:62px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:0}
+          #pipStatus{font-size:12px;color:#a4adbb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:7px 0 15px}
+          .row{display:flex;gap:8px;justify-content:center}
+          button{border:0;border-radius:8px;padding:9px 18px;background:#20242d;color:white;font-size:18px;cursor:pointer}
+          #pipStart{background:#ff5f57}
+        </style>`;
+      d.body.innerHTML = `<div class="box"><div id="pipTime"></div><div id="pipStatus"></div>
+        <div class="row"><button id="pipStart">▶</button><button id="pipReset">↺</button></div></div>`;
+      d.getElementById("pipStart").onclick = () => running ? pause() : start();
+      d.getElementById("pipReset").onclick = reset;
+      pipWindow.addEventListener("pagehide", () => pipWindow = null);
+      render();
+    } catch {
+      setHelp("小窓を開けませんでした。対応ブラウザと開き方を確認してください。", "warn");
+    }
+  }
+
+  function renderPiP(text){
+    if (!pipWindow || pipWindow.closed) return;
+    const d = pipWindow.document;
+    const t = d.getElementById("pipTime");
+    const st = d.getElementById("pipStatus");
+    const bt = d.getElementById("pipStart");
+    if (t) t.textContent = text;
+    if (st) st.textContent = els.status.textContent;
+    if (bt) bt.textContent = running ? "||" : ">";
+  }
+
+  function openMedia(){
+    const url = els.mediaUrl.value.trim();
+    if (!url) return;
+    save();
+    const embed = youtubeEmbedUrl(url);
+    if (embed) {
+      els.player.classList.remove("empty");
+      els.player.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="YouTube"></iframe>`;
+    } else {
+      window.open(url, "_blank", "noopener");
+    }
+  }
+
+  function youtubeEmbedUrl(raw){
+    try {
+      const url = new URL(raw);
+      const host = url.hostname.replace(/^www\./, "");
+      let id = "";
+      if (host === "youtu.be") id = url.pathname.slice(1);
+      if (host.endsWith("youtube.com") || host === "music.youtube.com") {
+        id = url.searchParams.get("v") || "";
+        if (!id && url.pathname.startsWith("/live/")) id = url.pathname.split("/")[2] || "";
+        if (!id && url.pathname.startsWith("/shorts/")) id = url.pathname.split("/")[2] || "";
+      }
+      return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1` : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function exportName(ext){
+    return `pomodoro-log-${dateKey()}.${ext}`;
+  }
+
+  function download(filename, content, type){
+    const blob = new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportJson(){
+    save();
+    download(exportName("json"), JSON.stringify(saved, null, 2), "application/json");
+    setHelp("JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。", "ok");
+  }
+
+  function exportCsv(){
+    const rows = [["date","time","mode","minutes","task","startedAt","endedAt"], ...(saved.logs || []).map(log => [
+      log.date, log.time, log.mode, log.minutes, log.task, log.startedAt, log.endedAt
+    ])];
+    const csv = rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"','""')}"`).join(",")).join("\r\n");
+    download(exportName("csv"), csv, "text/csv;charset=utf-8");
+    setHelp("CSVを書き出しました。Sheetsに読み込めます。", "ok");
+  }
+
+  async function shareJson(){
+    save();
+    const file = new File([JSON.stringify(saved, null, 2)], exportName("json"), {type:"application/json"});
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      await navigator.share({files:[file], title:"Pomodoro log"});
+      return;
+    }
+    exportJson();
+  }
+
+  function importJsonFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const incoming = JSON.parse(reader.result);
+        saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
+          .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
+          .slice(-1000);
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl"]) {
+          if (incoming[key] !== undefined) saved[key] = incoming[key];
+        }
+        hydrate();
+        save();
+        render();
+        setHelp("JSONログを読み込みました。", "ok");
+      } catch {
+        setHelp("JSONを読み込めませんでした。", "warn");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function setHelp(message, tone = ""){
+    els.help.innerHTML = tone ? `<span class="${tone}">${escapeHtml(message)}</span>` : escapeHtml(message);
+  }
+
+  els.start.onclick = () => running ? pause() : start();
+  els.reset.onclick = reset;
+  els.skip.onclick = skip;
+  els.pip.onclick = openPiP;
+  els.notify.onclick = requestNotify;
+  els.openMedia.onclick = openMedia;
+  els.pinTask.onclick = () => {
+    addLog({mode:"メモ", minutes:0, task:els.task.value || "タスクメモ", startedAt:Date.now()});
+    save();
+    render();
+  };
+  els.clearToday.onclick = () => {
+    saved.today = 0;
+    saved.round = 0;
+    saved.todayMinutes = 0;
+    save();
+    render();
+  };
+  els.exportCsv.onclick = exportCsv;
+  els.exportJson.onclick = exportJson;
+  els.shareJson.onclick = () => shareJson().catch(() => exportJson());
+  els.importJson.onclick = () => els.importFile.click();
+  els.importFile.onchange = () => {
+    const file = els.importFile.files && els.importFile.files[0];
+    if (file) importJsonFile(file);
+    els.importFile.value = "";
+  };
+  els.openDrive.onclick = () => window.open("https://drive.google.com/drive/my-drive", "_blank", "noopener");
+  els.clearLogs.onclick = () => {
+    if (!confirm("全ログを削除しますか？")) return;
+    saved.logs = [];
+    save();
+    render();
+  };
+  els.task.addEventListener("input", save);
+  els.mediaUrl.addEventListener("change", save);
+  els.theme.addEventListener("change", () => {
+    applyTheme(els.theme.value);
+    save();
+  });
+  $$(".mode").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  [els.focusMin, els.shortMin, els.longMin, els.targetRounds, els.logLimit].forEach(input => {
+    input.addEventListener("change", () => {
+      save();
+      if (!running) remainingMs = durationMs();
+      render();
+    });
+  });
+  [els.autoNext, els.soundOn].forEach(input => input.addEventListener("change", save));
+
+  els.envBadge.textContent = window.isSecureContext ? "secure" : "local file";
+  if ("Notification" in window && Notification.permission === "granted") els.notify.textContent = "通知ON";
+})();
+</script>
+</body>
+</html>
