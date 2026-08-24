@@ -71,6 +71,8 @@
       border-radius:8px; box-shadow:var(--shadow); overflow:hidden;
     }
     .header{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line)}
+    .header-actions{display:flex; align-items:center; gap:8px}
+    .lang-select{width:auto; min-width:92px; min-height:34px; padding:6px 9px; font-size:12px}
     h1{font-size:18px; margin:0; letter-spacing:0}
     .badge{font-size:12px; color:var(--muted); white-space:nowrap}
     .layout{display:grid; grid-template-columns:minmax(0,1fr) 340px}
@@ -94,6 +96,8 @@
     .section{border-top:1px solid var(--line); padding-top:16px; margin-top:16px}
     details{border-top:1px solid var(--line); margin-top:16px; padding-top:14px}
     summary{cursor:pointer; color:var(--muted); user-select:none}
+    .summary-label{display:inline-flex; align-items:center; gap:7px}
+    .summary-icon{font-size:15px; line-height:1}
     .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px}
     .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px}
     .toggles{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:13px; color:var(--muted)}
@@ -122,20 +126,26 @@
   <main class="app">
     <div class="header">
       <h1>Pomodoro Desk</h1>
-      <div class="badge" id="envBadge">local</div>
+      <div class="header-actions">
+        <select id="language" class="lang-select" aria-label="Language">
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+        </select>
+        <div class="badge" id="envBadge">local</div>
+      </div>
     </div>
 
     <div class="layout">
       <section class="main" aria-label="timer">
         <div class="modes">
-          <button class="mode active" data-mode="focus">集中</button>
-          <button class="mode" data-mode="short">短い休憩</button>
-          <button class="mode" data-mode="long">長い休憩</button>
+          <button class="mode active" data-mode="focus" data-i18n="modeFocus">集中</button>
+          <button class="mode" data-mode="short" data-i18n="modeShort">短い休憩</button>
+          <button class="mode" data-mode="long" data-i18n="modeLong">長い休憩</button>
         </div>
 
         <div class="task-row">
-          <input id="task" placeholder="いま何をやる？ 例：試験用データ収集" />
-          <button id="pinTask" class="icon-btn" title="タスクをログに残す">＋</button>
+          <input id="task" data-i18n-placeholder="taskPlaceholder" placeholder="いま何をやる？ 例：試験用データ収集" />
+          <button id="pinTask" class="icon-btn" data-i18n-title="pinTaskTitle" title="タスクをログに残す">＋</button>
         </div>
 
         <div id="timer" class="timer">25:00</div>
@@ -143,20 +153,20 @@
 
         <div class="primary">
           <button id="start" class="start">START</button>
-          <button id="reset">RESET</button>
-          <button id="skip">SKIP</button>
+          <button id="reset" data-i18n="reset">RESET</button>
+          <button id="skip" data-i18n="skip">SKIP</button>
         </div>
 
         <div class="stats">
-          <div class="card"><div class="label">今日の集中</div><div class="value"><span id="todayCount">0</span></div></div>
-          <div class="card"><div class="label">セット進捗</div><div class="value" id="roundCount">0 / 4</div></div>
-          <div class="card"><div class="label">今日の分数</div><div class="value"><span id="todayMinutes">0</span>m</div></div>
+          <div class="card"><div class="label" data-i18n="todayFocus">今日の集中</div><div class="value"><span id="todayCount">0</span></div></div>
+          <div class="card"><div class="label" data-i18n="roundProgress">セット進捗</div><div class="value" id="roundCount">0 / 4</div></div>
+          <div class="card"><div class="label" data-i18n="todayMinutes">今日の分数</div><div class="value"><span id="todayMinutes">0</span>m</div></div>
         </div>
 
         <div class="toolbar">
-          <button id="pip" title="小窓">小窓</button>
-          <button id="notify" title="通知">通知</button>
-          <button id="clearToday" title="今日のカウントだけリセット">今日リセット</button>
+          <button id="pip" data-i18n="pip" data-i18n-title="pipTitle" title="小窓">小窓</button>
+          <button id="notify" data-i18n="notify" data-i18n-title="notifyTitle" title="通知">通知</button>
+          <button id="clearToday" data-i18n="clearToday" data-i18n-title="clearTodayTitle" title="今日のカウントだけリセット">今日リセット</button>
         </div>
 
         <div class="section">
@@ -173,29 +183,29 @@
         </div>
 
         <details>
-          <summary>設定</summary>
+          <summary><span class="summary-label"><span class="summary-icon" aria-hidden="true">🔧</span><span data-i18n="settings">設定</span></span></summary>
           <div class="grid-3">
-            <label><span>集中（分）</span><input id="focusMin" type="number" min="1" max="180" value="25"></label>
-            <label><span>短い休憩（分）</span><input id="shortMin" type="number" min="1" max="60" value="5"></label>
-            <label><span>長い休憩（分）</span><input id="longMin" type="number" min="1" max="120" value="15"></label>
+            <label><span data-i18n="focusMinutes">集中（分）</span><input id="focusMin" type="number" min="1" max="180" value="25"></label>
+            <label><span data-i18n="shortMinutes">短い休憩（分）</span><input id="shortMin" type="number" min="1" max="60" value="5"></label>
+            <label><span data-i18n="longMinutes">長い休憩（分）</span><input id="longMin" type="number" min="1" max="120" value="15"></label>
           </div>
           <div class="grid-2">
-            <label><span>長い休憩までのセット数</span><input id="targetRounds" type="number" min="1" max="12" value="4"></label>
-            <label><span>ログ表示件数</span><input id="logLimit" type="number" min="5" max="100" value="20"></label>
+            <label><span data-i18n="targetRounds">長い休憩までのセット数</span><input id="targetRounds" type="number" min="1" max="12" value="4"></label>
+            <label><span data-i18n="logLimit">ログ表示件数</span><input id="logLimit" type="number" min="5" max="100" value="20"></label>
           </div>
           <div class="grid-2">
-            <label><span>配色</span>
+            <label><span data-i18n="theme">配色</span>
               <select id="theme">
-                <option value="dark">ダーク</option>
-                <option value="light">ライト</option>
-                <option value="system">PC設定追従</option>
-                <option value="tomato">柔らかいトマト色</option>
+                <option value="dark" data-i18n="themeDark">ダーク</option>
+                <option value="light" data-i18n="themeLight">ライト</option>
+                <option value="system" data-i18n="themeSystem">PC設定追従</option>
+                <option value="tomato" data-i18n="themeTomato">柔らかいトマト色</option>
               </select>
             </label>
           </div>
           <div class="toggles">
-            <label><input id="autoNext" type="checkbox"> 終了後に次を自動開始</label>
-            <label><input id="soundOn" type="checkbox" checked> 終了音</label>
+            <label><input id="autoNext" type="checkbox"> <span data-i18n="autoNext">終了後に次を自動開始</span></label>
+            <label><input id="soundOn" type="checkbox" checked> <span data-i18n="soundOn">終了音</span></label>
           </div>
         </details>
 
@@ -204,19 +214,19 @@
 
       <aside class="side" aria-label="log">
         <div class="log-head">
-          <h2>ログ</h2>
+          <h2 data-i18n="log">ログ</h2>
           <span class="small" id="logCount">0件</span>
         </div>
         <div class="grid-2">
           <button id="exportCsv">CSV</button>
           <button id="exportJson">JSON</button>
-          <button id="shareJson">共有</button>
-          <button id="importJson">読込</button>
+          <button id="shareJson" data-i18n="share">共有</button>
+          <button id="importJson" data-i18n="import">読込</button>
         </div>
         <input id="importFile" type="file" accept="application/json,.json">
         <div class="grid-2">
           <button id="openDrive">Drive</button>
-          <button id="clearLogs">全ログ削除</button>
+          <button id="clearLogs" data-i18n="clearLogs">全ログ削除</button>
         </div>
         <div id="logList" class="log-list section"></div>
       </aside>
@@ -234,7 +244,7 @@
     todayMinutes: $("#todayMinutes"), clearToday: $("#clearToday"),
     focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
-    theme: $("#theme"),
+    theme: $("#theme"), language: $("#language"),
     autoNext: $("#autoNext"), soundOn: $("#soundOn"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
@@ -247,6 +257,56 @@
   const oldKey = "pomodoro-mini-v1";
   const dateKey = () => new Date().toLocaleDateString("sv-SE");
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || min));
+  const i18n = {
+    ja: {
+      modeFocus:"集中", modeShort:"短い休憩", modeLong:"長い休憩",
+      taskPlaceholder:"いま何をやる？ 例：試験用データ収集",
+      pinTaskTitle:"タスクをログに残す", start:"START", pause:"PAUSE", reset:"RESET", skip:"SKIP",
+      todayFocus:"今日の集中", roundProgress:"セット進捗", todayMinutes:"今日の分数",
+      pip:"小窓", pipTitle:"小窓", notify:"通知", notifyOn:"通知ON", notifyOff:"通知OFF", notifyTitle:"通知",
+      clearToday:"今日リセット", clearTodayTitle:"今日のカウントだけリセット",
+      settings:"設定", focusMinutes:"集中（分）", shortMinutes:"短い休憩（分）", longMinutes:"長い休憩（分）",
+      targetRounds:"長い休憩までのセット数", logLimit:"ログ表示件数", theme:"配色",
+      themeDark:"ダーク", themeLight:"ライト", themeSystem:"PC設定追従", themeTomato:"柔らかいトマト色",
+      autoNext:"終了後に次を自動開始", soundOn:"終了音", log:"ログ", share:"共有", import:"読込",
+      clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", runningSuffix:"中",
+      emptyLog:"まだログはありません。", untitled:"無題", memo:"メモ", taskMemo:"タスクメモ", breakTask:"休憩",
+      logsCount:(n) => `${n}件`, minutesSuffix:"m",
+      focusDoneTitle:"集中おつかれさま", breakDoneTitle:"休憩終了",
+      focusDoneBody:"次は休憩です。", breakDoneBody:"集中に戻ります。",
+      notifyUnsupported:"このブラウザは通知APIに対応していません。",
+      pipUnsupported:"小窓はChrome系ブラウザでHTTPSまたはlocalhostから開くと利用できます。",
+      pipFailed:"小窓を開けませんでした。対応ブラウザと開き方を確認してください。",
+      jsonExported:"JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。",
+      csvExported:"CSVを書き出しました。Sheetsに読み込めます。",
+      jsonImported:"JSONログを読み込みました。", jsonImportFailed:"JSONを読み込めませんでした。",
+      confirmClearLogs:"全ログを削除しますか？", helpDefault:"ログはこのブラウザに保存されます。"
+    },
+    en: {
+      modeFocus:"Focus", modeShort:"Short break", modeLong:"Long break",
+      taskPlaceholder:"What are you working on? e.g. collect test data",
+      pinTaskTitle:"Add task to log", start:"START", pause:"PAUSE", reset:"RESET", skip:"SKIP",
+      todayFocus:"Focus today", roundProgress:"Round progress", todayMinutes:"Minutes today",
+      pip:"Mini window", pipTitle:"Mini window", notify:"Notify", notifyOn:"Notify ON", notifyOff:"Notify OFF", notifyTitle:"Notifications",
+      clearToday:"Reset today", clearTodayTitle:"Reset today's counters only",
+      settings:"Settings", focusMinutes:"Focus minutes", shortMinutes:"Short break minutes", longMinutes:"Long break minutes",
+      targetRounds:"Rounds before long break", logLimit:"Log rows to show", theme:"Theme",
+      themeDark:"Dark", themeLight:"Light", themeSystem:"Follow system", themeTomato:"Soft tomato",
+      autoNext:"Auto-start next session", soundOn:"End sound", log:"Log", share:"Share", import:"Import",
+      clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", runningSuffix:"",
+      emptyLog:"No logs yet.", untitled:"Untitled", memo:"Memo", taskMemo:"Task memo", breakTask:"Break",
+      logsCount:(n) => `${n} logs`, minutesSuffix:"m",
+      focusDoneTitle:"Focus complete", breakDoneTitle:"Break finished",
+      focusDoneBody:"Time for a break.", breakDoneBody:"Back to focus.",
+      notifyUnsupported:"This browser does not support notifications.",
+      pipUnsupported:"Mini window works in Chromium browsers over HTTPS or localhost.",
+      pipFailed:"Could not open the mini window. Check your browser and how the page is opened.",
+      jsonExported:"Exported JSON. Put it on Google Drive and import it in another browser.",
+      csvExported:"Exported CSV. You can import it into Sheets.",
+      jsonImported:"Imported JSON log.", jsonImportFailed:"Could not import that JSON file.",
+      confirmClearLogs:"Delete all logs?", helpDefault:"Logs are saved in this browser."
+    }
+  };
 
   let saved = loadState();
   let mode = saved.mode || "focus";
@@ -290,6 +350,8 @@
     els.logLimit.value = saved.logLimit || 20;
     els.theme.value = saved.theme || "dark";
     applyTheme(els.theme.value);
+    els.language.value = saved.language || "ja";
+    applyLanguage(els.language.value);
     els.task.value = saved.task || "";
     els.mediaUrl.value = saved.mediaUrl || "";
     els.autoNext.checked = !!saved.autoNext;
@@ -309,6 +371,7 @@
       targetRounds: clamp(els.targetRounds.value, 1, 12),
       logLimit: clamp(els.logLimit.value, 5, 100),
       theme: els.theme.value,
+      language: els.language.value,
       task: els.task.value,
       mediaUrl: els.mediaUrl.value,
       autoNext: els.autoNext.checked,
@@ -324,6 +387,27 @@
 
   function applyTheme(theme){
     document.body.dataset.theme = ["dark","light","system","tomato"].includes(theme) ? theme : "dark";
+    applyPiPTheme();
+  }
+
+  function currentLang(){
+    return i18n[els.language.value] ? els.language.value : "ja";
+  }
+
+  function t(key){
+    return i18n[currentLang()][key] ?? i18n.ja[key] ?? key;
+  }
+
+  function applyLanguage(lang){
+    document.documentElement.lang = i18n[lang] ? lang : "ja";
+    $$("[data-i18n]").forEach(el => {
+      const value = t(el.dataset.i18n);
+      if (typeof value === "string") el.textContent = value;
+    });
+    $$("[data-i18n-placeholder]").forEach(el => el.placeholder = t(el.dataset.i18nPlaceholder));
+    $$("[data-i18n-title]").forEach(el => el.title = t(el.dataset.i18nTitle));
+    els.help.textContent = t("helpDefault");
+    render();
   }
 
   function durationMs(m = mode){
@@ -343,7 +427,7 @@
   }
 
   function modeLabel(value = mode){
-    return value === "focus" ? "集中" : value === "short" ? "短い休憩" : "長い休憩";
+    return value === "focus" ? t("modeFocus") : value === "short" ? t("modeShort") : t("modeLong");
   }
 
   function render(){
@@ -352,14 +436,14 @@
     const target = clamp(els.targetRounds.value, 1, 12);
     els.timer.textContent = text;
     document.title = `${text} ${modeLabel()}`;
-    els.start.textContent = running ? "PAUSE" : "START";
+    els.start.textContent = running ? t("pause") : t("start");
     els.status.textContent = running
-      ? `${modeLabel()}中${els.task.value ? " - " + els.task.value : ""}`
-      : `${modeLabel()} - ${ms === durationMs() ? "準備完了" : "一時停止"}`;
+      ? `${modeLabel()}${t("runningSuffix")}${els.task.value ? " - " + els.task.value : ""}`
+      : `${modeLabel()} - ${ms === durationMs() ? t("ready") : t("paused")}`;
     els.todayCount.textContent = saved.today || 0;
     els.roundCount.textContent = `${saved.round || 0} / ${target}`;
     els.todayMinutes.textContent = saved.todayMinutes || 0;
-    els.logCount.textContent = `${(saved.logs || []).length}件`;
+    els.logCount.textContent = t("logsCount")((saved.logs || []).length);
     $$(".mode").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
     renderLogs();
     renderPiP(text);
@@ -369,7 +453,7 @@
     const limit = clamp(els.logLimit.value, 5, 100);
     const logs = [...(saved.logs || [])].slice(-limit).reverse();
     if (!logs.length) {
-      els.logList.innerHTML = '<div class="empty-log">まだログはありません。</div>';
+      els.logList.innerHTML = `<div class="empty-log">${escapeHtml(t("emptyLog"))}</div>`;
       return;
     }
     els.logList.innerHTML = logs.map(log => `
@@ -378,7 +462,7 @@
           <span>${escapeHtml(log.date)} ${escapeHtml(log.time)}</span>
           <span>${escapeHtml(log.mode)} / ${log.minutes}m</span>
         </div>
-        <div class="log-task">${escapeHtml(log.task || "無題")}</div>
+        <div class="log-task">${escapeHtml(log.task || t("untitled"))}</div>
       </div>
     `).join("");
   }
@@ -459,7 +543,7 @@
       if (saved.round >= target) saved.round = 0;
       mode = next;
     } else {
-      addLog({mode:modeLabel(finished), minutes, task:"休憩", startedAt});
+      addLog({mode:modeLabel(finished), minutes, task:t("breakTask"), startedAt});
       mode = "focus";
     }
 
@@ -514,24 +598,24 @@
 
   function notifyFinished(){
     if (Notification.permission === "granted") {
-      new Notification(mode === "focus" ? "集中おつかれさま" : "休憩終了", {
-        body: els.task.value || (mode === "focus" ? "次は休憩です。" : "集中に戻ります。")
+      new Notification(mode === "focus" ? t("focusDoneTitle") : t("breakDoneTitle"), {
+        body: els.task.value || (mode === "focus" ? t("focusDoneBody") : t("breakDoneBody"))
       });
     }
   }
 
   async function requestNotify(){
     if (!("Notification" in window)) {
-      setHelp("このブラウザは通知APIに対応していません。", "warn");
+      setHelp(t("notifyUnsupported"), "warn");
       return;
     }
     const p = await Notification.requestPermission();
-    els.notify.textContent = p === "granted" ? "通知ON" : "通知OFF";
+    els.notify.textContent = p === "granted" ? t("notifyOn") : t("notifyOff");
   }
 
   async function openPiP(){
     if (!("documentPictureInPicture" in window)) {
-      setHelp("小窓はChrome系ブラウザでHTTPSまたはlocalhostから開くと利用できます。", "warn");
+      setHelp(t("pipUnsupported"), "warn");
       return;
     }
     try {
@@ -544,13 +628,14 @@
       d.head.innerHTML = `
         <meta charset="utf-8">
         <style>
-          body{margin:0;background:#101218;color:#f6f7fb;font-family:system-ui,"Noto Sans JP",sans-serif;display:grid;place-items:center;height:100vh}
+          :root{${pipThemeCss()}}
+          body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,"Noto Sans JP",sans-serif;display:grid;place-items:center;height:100vh}
           .box{text-align:center;width:100%;padding:18px}
           #pipTime{font-size:62px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:0}
-          #pipStatus{font-size:12px;color:#a4adbb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:7px 0 15px}
+          #pipStatus{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:7px 0 15px}
           .row{display:flex;gap:8px;justify-content:center}
-          button{border:0;border-radius:8px;padding:9px 18px;background:#20242d;color:white;font-size:18px;cursor:pointer}
-          #pipStart{background:#ff5f57}
+          button{border:0;border-radius:8px;padding:9px 18px;background:var(--panel2);color:var(--text);font-size:18px;cursor:pointer}
+          #pipStart{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
         </style>`;
       d.body.innerHTML = `<div class="box"><div id="pipTime"></div><div id="pipStatus"></div>
         <div class="row"><button id="pipStart">▶</button><button id="pipReset">↺</button></div></div>`;
@@ -559,12 +644,13 @@
       pipWindow.addEventListener("pagehide", () => pipWindow = null);
       render();
     } catch {
-      setHelp("小窓を開けませんでした。対応ブラウザと開き方を確認してください。", "warn");
+      setHelp(t("pipFailed"), "warn");
     }
   }
 
   function renderPiP(text){
     if (!pipWindow || pipWindow.closed) return;
+    applyPiPTheme();
     const d = pipWindow.document;
     const t = d.getElementById("pipTime");
     const st = d.getElementById("pipStatus");
@@ -572,6 +658,18 @@
     if (t) t.textContent = text;
     if (st) st.textContent = els.status.textContent;
     if (bt) bt.textContent = running ? "||" : ">";
+  }
+
+  function pipThemeCss(){
+    const styles = getComputedStyle(document.body);
+    return ["--bg","--text","--muted","--panel2","--accent","--accent2"]
+      .map(name => `${name}:${styles.getPropertyValue(name).trim()};`)
+      .join("");
+  }
+
+  function applyPiPTheme(){
+    if (!pipWindow || pipWindow.closed) return;
+    pipWindow.document.documentElement.style.cssText = pipThemeCss();
   }
 
   function openMedia(){
@@ -621,7 +719,7 @@
   function exportJson(){
     save();
     download(exportName("json"), JSON.stringify(saved, null, 2), "application/json");
-    setHelp("JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。", "ok");
+    setHelp(t("jsonExported"), "ok");
   }
 
   function exportCsv(){
@@ -630,7 +728,7 @@
     ])];
     const csv = rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"','""')}"`).join(",")).join("\r\n");
     download(exportName("csv"), csv, "text/csv;charset=utf-8");
-    setHelp("CSVを書き出しました。Sheetsに読み込めます。", "ok");
+    setHelp(t("csvExported"), "ok");
   }
 
   async function shareJson(){
@@ -651,15 +749,15 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","theme","language"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
         save();
         render();
-        setHelp("JSONログを読み込みました。", "ok");
+        setHelp(t("jsonImported"), "ok");
       } catch {
-        setHelp("JSONを読み込めませんでした。", "warn");
+        setHelp(t("jsonImportFailed"), "warn");
       }
     };
     reader.readAsText(file);
@@ -676,7 +774,7 @@
   els.notify.onclick = requestNotify;
   els.openMedia.onclick = openMedia;
   els.pinTask.onclick = () => {
-    addLog({mode:"メモ", minutes:0, task:els.task.value || "タスクメモ", startedAt:Date.now()});
+    addLog({mode:t("memo"), minutes:0, task:els.task.value || t("taskMemo"), startedAt:Date.now()});
     save();
     render();
   };
@@ -698,7 +796,7 @@
   };
   els.openDrive.onclick = () => window.open("https://drive.google.com/drive/my-drive", "_blank", "noopener");
   els.clearLogs.onclick = () => {
-    if (!confirm("全ログを削除しますか？")) return;
+    if (!confirm(t("confirmClearLogs"))) return;
     saved.logs = [];
     save();
     render();
@@ -707,6 +805,11 @@
   els.mediaUrl.addEventListener("change", save);
   els.theme.addEventListener("change", () => {
     applyTheme(els.theme.value);
+    save();
+    render();
+  });
+  els.language.addEventListener("change", () => {
+    applyLanguage(els.language.value);
     save();
   });
   $$(".mode").forEach(b => b.onclick = () => setMode(b.dataset.mode));
@@ -720,7 +823,7 @@
   [els.autoNext, els.soundOn].forEach(input => input.addEventListener("change", save));
 
   els.envBadge.textContent = window.isSecureContext ? "secure" : "local file";
-  if ("Notification" in window && Notification.permission === "granted") els.notify.textContent = "通知ON";
+  if ("Notification" in window && Notification.permission === "granted") els.notify.textContent = t("notifyOn");
 })();
 </script>
 </body>

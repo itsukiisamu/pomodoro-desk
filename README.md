@@ -17,6 +17,8 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - YouTube / YouTube Music への導線と、動画 URL の埋め込み表示
 - 通知、終了音、小窓表示
 - ダーク、ライト、PC設定追従、柔らかいトマト色の配色切替
+- 日本語 / 英語の表示切替
+- 小窓表示の配色追従
 - トマトのブラウザアイコン
 
 ## やらないこと
