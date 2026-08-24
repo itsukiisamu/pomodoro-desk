@@ -105,6 +105,8 @@
     .toggles label{display:flex; align-items:center; gap:7px}
     .toggles input{width:auto; min-height:auto}
     .media-row{display:grid; grid-template-columns:minmax(0,1fr) 46px 46px; gap:8px; margin-top:12px}
+    .info-note{font-size:12px; color:var(--muted); line-height:1.55; margin-top:8px}
+    .info-note strong{display:inline-grid; place-items:center; width:18px; height:18px; border-radius:50%; background:var(--panel2); color:var(--text); font-size:12px; margin-right:5px}
     .player{margin-top:10px; aspect-ratio:16/9; background:var(--player-bg); border:1px solid var(--line); border-radius:8px; overflow:hidden}
     .player iframe{width:100%; height:100%; border:0; display:block}
     .player.empty{display:none}
@@ -185,6 +187,10 @@
             <button id="openMedia" class="icon-btn" data-i18n-title="openMediaTitle" title="開く">↗</button>
             <button id="stopMedia" class="icon-btn" data-i18n-title="stopMediaTitle" title="埋め込み再生を停止">■</button>
           </div>
+          <label class="section"><span data-i18n="bgmTitle">BGMタイトル</span>
+            <input id="bgmTitle" data-i18n-placeholder="bgmTitlePlaceholder" placeholder="例：作業用BGM / 推し曲タイトル">
+          </label>
+          <div class="info-note"><strong>i</strong><span data-i18n="bgmTitleNote">ローカル稼働版では動画タイトルを自動取得しないため、必要なら手入力してください。</span></div>
           <div id="player" class="player empty"></div>
           <div class="links">
             <a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a>
@@ -288,7 +294,7 @@
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
     theme: $("#theme"), soundPattern: $("#soundPattern"), testSound: $("#testSound"), language: $("#language"),
     autoNext: $("#autoNext"), soundOn: $("#soundOn"), rewardOn: $("#rewardOn"), envBadge: $("#envBadge"),
-    help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
+    help: $("#help"), mediaUrl: $("#mediaUrl"), bgmTitle: $("#bgmTitle"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
     exportCsv: $("#exportCsv"), exportJson: $("#exportJson"), shareJson: $("#shareJson"),
     importJson: $("#importJson"), importFile: $("#importFile"),
@@ -328,6 +334,8 @@
       pipUnsupported:"小窓はChrome系ブラウザでHTTPSまたはlocalhostから開くと利用できます。",
       pipFailed:"小窓を開けませんでした。対応ブラウザと開き方を確認してください。",
       openMediaTitle:"開く", stopMediaTitle:"埋め込み再生を停止",
+      bgmTitle:"BGMタイトル", bgmTitlePlaceholder:"例：作業用BGM / 推し曲タイトル",
+      bgmTitleNote:"ローカル稼働版では動画タイトルを自動取得しないため、必要なら手入力してください。",
       jsonExported:"JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。",
       csvExported:"CSVを書き出しました。Sheetsに読み込めます。",
       jsonImported:"JSONログを読み込みました。", jsonImportFailed:"JSONを読み込めませんでした。",
@@ -360,6 +368,8 @@
       pipUnsupported:"Mini window works in Chromium browsers over HTTPS or localhost.",
       pipFailed:"Could not open the mini window. Check your browser and how the page is opened.",
       openMediaTitle:"Open", stopMediaTitle:"Stop embedded playback",
+      bgmTitle:"BGM title", bgmTitlePlaceholder:"e.g. work BGM / favorite track title",
+      bgmTitleNote:"The local version does not auto-fetch video titles, so enter one manually if needed.",
       jsonExported:"Exported JSON. Put it on Google Drive and import it in another browser.",
       csvExported:"Exported CSV. You can import it into Sheets.",
       jsonImported:"Imported JSON log.", jsonImportFailed:"Could not import that JSON file.",
@@ -416,6 +426,7 @@
     applyLanguage(els.language.value);
     els.task.value = saved.task || "";
     els.mediaUrl.value = saved.mediaUrl || "";
+    els.bgmTitle.value = saved.bgmTitle || "";
     els.autoNext.checked = !!saved.autoNext;
     els.soundOn.checked = saved.soundOn !== false;
     els.rewardOn.checked = saved.rewardOn !== false;
@@ -439,6 +450,7 @@
       language: els.language.value,
       task: els.task.value,
       mediaUrl: els.mediaUrl.value,
+      bgmTitle: els.bgmTitle.value,
       autoNext: els.autoNext.checked,
       soundOn: els.soundOn.checked,
       rewardOn: els.rewardOn.checked,
@@ -530,6 +542,7 @@
           <span>${escapeHtml(log.mode)} / ${log.minutes}m</span>
         </div>
         <div class="log-task">${escapeHtml(log.task || t("untitled"))}</div>
+        ${log.bgmTitle || log.bgmUrl ? `<div class="log-top">${escapeHtml(log.bgmTitle || "BGM")} ${log.bgmUrl ? "· URL" : ""}</div>` : ""}
       </div>
     `).join("");
   }
@@ -632,6 +645,8 @@
       mode,
       minutes,
       task: task || "",
+      bgmTitle: els.bgmTitle.value || "",
+      bgmUrl: els.mediaUrl.value || "",
       startedAt: start.toISOString(),
       endedAt: now.toISOString()
     }].slice(-1000);
@@ -848,8 +863,8 @@
   }
 
   function exportCsv(){
-    const rows = [["date","time","mode","minutes","task","startedAt","endedAt"], ...(saved.logs || []).map(log => [
-      log.date, log.time, log.mode, log.minutes, log.task, log.startedAt, log.endedAt
+    const rows = [["date","time","mode","minutes","task","bgmTitle","bgmUrl","startedAt","endedAt"], ...(saved.logs || []).map(log => [
+      log.date, log.time, log.mode, log.minutes, log.task, log.bgmTitle, log.bgmUrl, log.startedAt, log.endedAt
     ])];
     const csv = rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"','""')}"`).join(",")).join("\r\n");
     download(exportName("csv"), csv, "text/csv;charset=utf-8");
@@ -874,7 +889,7 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","theme","soundPattern","language","rewardOn","rewardImage"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","bgmTitle","theme","soundPattern","language","rewardOn","rewardImage"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
@@ -998,6 +1013,7 @@
   };
   els.task.addEventListener("input", save);
   els.mediaUrl.addEventListener("change", save);
+  els.bgmTitle.addEventListener("input", save);
   els.theme.addEventListener("change", () => {
     applyTheme(els.theme.value);
     save();

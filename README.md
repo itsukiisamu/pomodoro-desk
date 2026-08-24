@@ -16,6 +16,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - Google Drive を開いて、書き出したログファイルを共有
 - YouTube / YouTube Music への導線と、動画 URL の埋め込み表示
 - 埋め込み表示した YouTube 動画の停止
+- BGMタイトルの手入力とログ保存
 - 通知、終了音、小窓表示
 - 終了音タイプの変更（チャイム 3秒 / 5秒 / 10秒、CQ音 1回 / 3回）
 - 終了音の試聴
@@ -28,6 +29,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 ## やらないこと
 
 - Google アカウントへの直接ログインや自動同期
+- YouTube / YouTube Music のタイトル自動取得
 - 別タブで開いた YouTube / YouTube Music の再生制御や広告制御
 - サーバー保存、ユーザー管理、チーム管理
 - 複雑な分析ダッシュボード
@@ -43,5 +45,6 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - 外部ライブラリなし
 - データ保存先はブラウザの `localStorage`
 - ご褒美画像はブラウザ内で縮小して `localStorage` に保存
+- ローカル稼働版では動画タイトルを自動取得しないため、BGMタイトルは手入力
 - Google Drive 共有はファイルのエクスポート / インポート方式
 - 小窓表示は対応ブラウザ、HTTPS、または localhost で利用可能
