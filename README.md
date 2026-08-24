@@ -19,6 +19,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - 通知、終了音、小窓表示
 - 終了音タイプの変更（チャイム 3秒 / 5秒 / 10秒、CQ音 1回 / 3回）
 - 終了音の試聴
+- 集中完了時のご褒美画像ポップアップ
 - ダーク、ライト、PC設定追従、柔らかいトマト色の配色切替
 - 日本語 / 英語の表示切替
 - 小窓表示の配色追従
@@ -41,5 +42,6 @@ https://itsukiisamu.github.io/pomodoro-desk/
 
 - 外部ライブラリなし
 - データ保存先はブラウザの `localStorage`
+- ご褒美画像はブラウザ内で縮小して `localStorage` に保存
 - Google Drive 共有はファイルのエクスポート / インポート方式
 - 小窓表示は対応ブラウザ、HTTPS、または localhost で利用可能

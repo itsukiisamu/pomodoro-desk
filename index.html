@@ -115,6 +115,14 @@
     .log-top{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted)}
     .log-task{font-size:14px; margin-top:4px; overflow-wrap:anywhere}
     .empty-log{color:var(--muted); font-size:13px; padding:14px 0}
+    .reward-actions{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
+    .reward-preview{display:none; width:100%; max-height:130px; object-fit:cover; border:1px solid var(--line); border-radius:8px; margin-top:8px}
+    .reward-modal{position:fixed; inset:0; display:none; place-items:center; padding:20px; background:rgba(0,0,0,.62); z-index:10}
+    .reward-modal.open{display:grid}
+    .reward-box{width:min(520px,100%); background:var(--app-bg); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); overflow:hidden}
+    .reward-box img{display:block; width:100%; max-height:68vh; object-fit:contain; background:var(--player-bg)}
+    .reward-caption{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; color:var(--text)}
+    .reward-caption strong{font-size:14px}
     .small{font-size:12px; color:var(--muted); line-height:1.55}
     .ok{color:var(--ok)}
     .warn{color:var(--warn)}
@@ -220,6 +228,17 @@
           <div class="toggles">
             <label><input id="autoNext" type="checkbox"> <span data-i18n="autoNext">終了後に次を自動開始</span></label>
             <label><input id="soundOn" type="checkbox" checked> <span data-i18n="soundOn">終了音</span></label>
+            <label><input id="rewardOn" type="checkbox" checked> <span data-i18n="rewardOn">集中完了時にご褒美画像</span></label>
+          </div>
+          <div class="section">
+            <label><span data-i18n="rewardImage">ご褒美画像</span>
+              <input id="rewardFile" type="file" accept="image/*">
+            </label>
+            <img id="rewardPreview" class="reward-preview" alt="">
+            <div class="reward-actions">
+              <button id="previewReward" type="button" data-i18n="previewReward">表示テスト</button>
+              <button id="clearReward" type="button" data-i18n="clearReward">画像削除</button>
+            </div>
           </div>
         </details>
 
@@ -246,6 +265,15 @@
       </aside>
     </div>
   </main>
+  <div id="rewardModal" class="reward-modal" role="dialog" aria-modal="true">
+    <div class="reward-box">
+      <img id="rewardImageView" alt="">
+      <div class="reward-caption">
+        <strong data-i18n="rewardTitle">おつかれさま！</strong>
+        <button id="closeReward" type="button" data-i18n="closeReward">閉じる</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 (() => {
@@ -259,12 +287,15 @@
     focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
     theme: $("#theme"), soundPattern: $("#soundPattern"), testSound: $("#testSound"), language: $("#language"),
-    autoNext: $("#autoNext"), soundOn: $("#soundOn"), envBadge: $("#envBadge"),
+    autoNext: $("#autoNext"), soundOn: $("#soundOn"), rewardOn: $("#rewardOn"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
     exportCsv: $("#exportCsv"), exportJson: $("#exportJson"), shareJson: $("#shareJson"),
     importJson: $("#importJson"), importFile: $("#importFile"),
-    openDrive: $("#openDrive"), clearLogs: $("#clearLogs")
+    openDrive: $("#openDrive"), clearLogs: $("#clearLogs"),
+    rewardFile: $("#rewardFile"), rewardPreview: $("#rewardPreview"), previewReward: $("#previewReward"),
+    clearReward: $("#clearReward"), rewardModal: $("#rewardModal"), rewardImageView: $("#rewardImageView"),
+    closeReward: $("#closeReward")
   };
 
   const KEY = "pomodoro-desk-v2";
@@ -285,7 +316,9 @@
       soundPattern:"終了音タイプ", soundChime3:"チャイム 3秒", soundChime5:"チャイム 5秒",
       soundChime10:"チャイム 10秒", soundCq1:"CQ音 1回", soundCq3:"CQ音 3回",
       testSound:"試聴",
-      autoNext:"終了後に次を自動開始", soundOn:"終了音", log:"ログ", share:"共有", import:"読込",
+      autoNext:"終了後に次を自動開始", soundOn:"終了音", rewardOn:"集中完了時にご褒美画像",
+      rewardImage:"ご褒美画像", previewReward:"表示テスト", clearReward:"画像削除", rewardTitle:"おつかれさま！", closeReward:"閉じる",
+      log:"ログ", share:"共有", import:"読込",
       clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", runningSuffix:"中",
       emptyLog:"まだログはありません。", untitled:"無題", memo:"メモ", taskMemo:"タスクメモ", breakTask:"休憩",
       logsCount:(n) => `${n}件`, minutesSuffix:"m",
@@ -298,6 +331,8 @@
       jsonExported:"JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。",
       csvExported:"CSVを書き出しました。Sheetsに読み込めます。",
       jsonImported:"JSONログを読み込みました。", jsonImportFailed:"JSONを読み込めませんでした。",
+      rewardSaved:"ご褒美画像を保存しました。", rewardCleared:"ご褒美画像を削除しました。",
+      rewardTooLarge:"画像を保存できませんでした。別の画像で試してください。",
       confirmClearLogs:"全ログを削除しますか？", helpDefault:"ログはこのブラウザに保存されます。"
     },
     en: {
@@ -313,7 +348,9 @@
       soundPattern:"End sound type", soundChime3:"Chime 3 sec", soundChime5:"Chime 5 sec",
       soundChime10:"Chime 10 sec", soundCq1:"CQ once", soundCq3:"CQ three times",
       testSound:"Test",
-      autoNext:"Auto-start next session", soundOn:"End sound", log:"Log", share:"Share", import:"Import",
+      autoNext:"Auto-start next session", soundOn:"End sound", rewardOn:"Reward image after focus",
+      rewardImage:"Reward image", previewReward:"Preview", clearReward:"Clear image", rewardTitle:"Nice work!", closeReward:"Close",
+      log:"Log", share:"Share", import:"Import",
       clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", runningSuffix:"",
       emptyLog:"No logs yet.", untitled:"Untitled", memo:"Memo", taskMemo:"Task memo", breakTask:"Break",
       logsCount:(n) => `${n} logs`, minutesSuffix:"m",
@@ -326,6 +363,8 @@
       jsonExported:"Exported JSON. Put it on Google Drive and import it in another browser.",
       csvExported:"Exported CSV. You can import it into Sheets.",
       jsonImported:"Imported JSON log.", jsonImportFailed:"Could not import that JSON file.",
+      rewardSaved:"Saved reward image.", rewardCleared:"Cleared reward image.",
+      rewardTooLarge:"Could not save that image. Try a different one.",
       confirmClearLogs:"Delete all logs?", helpDefault:"Logs are saved in this browser."
     }
   };
@@ -379,6 +418,8 @@
     els.mediaUrl.value = saved.mediaUrl || "";
     els.autoNext.checked = !!saved.autoNext;
     els.soundOn.checked = saved.soundOn !== false;
+    els.rewardOn.checked = saved.rewardOn !== false;
+    updateRewardPreview();
   }
 
   function statePayload(){
@@ -400,6 +441,8 @@
       mediaUrl: els.mediaUrl.value,
       autoNext: els.autoNext.checked,
       soundOn: els.soundOn.checked,
+      rewardOn: els.rewardOn.checked,
+      rewardImage: saved.rewardImage || "",
       logs: saved.logs || []
     };
   }
@@ -562,6 +605,7 @@
       saved.todayMinutes = (saved.todayMinutes || 0) + minutes;
       saved.round = (saved.round || 0) + 1;
       addLog({mode:modeLabel(finished), minutes, task:els.task.value, startedAt});
+      showReward();
       const target = clamp(els.targetRounds.value, 1, 12);
       const next = saved.round >= target ? "long" : "short";
       if (saved.round >= target) saved.round = 0;
@@ -830,7 +874,7 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","theme","soundPattern","language"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","theme","soundPattern","language","rewardOn","rewardImage"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
@@ -848,6 +892,58 @@
     els.help.innerHTML = tone ? `<span class="${tone}">${escapeHtml(message)}</span>` : escapeHtml(message);
   }
 
+  function updateRewardPreview(){
+    if (saved.rewardImage) {
+      els.rewardPreview.src = saved.rewardImage;
+      els.rewardPreview.style.display = "block";
+    } else {
+      els.rewardPreview.removeAttribute("src");
+      els.rewardPreview.style.display = "none";
+    }
+  }
+
+  function showReward(force = false){
+    if (!saved.rewardImage || (!force && !els.rewardOn.checked)) return;
+    els.rewardImageView.src = saved.rewardImage;
+    els.rewardModal.classList.add("open");
+  }
+
+  function hideReward(){
+    els.rewardModal.classList.remove("open");
+  }
+
+  function readRewardImage(file){
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => resizeRewardImage(reader.result).then(dataUrl => {
+      saved.rewardImage = dataUrl;
+      updateRewardPreview();
+      save();
+      setHelp(t("rewardSaved"), "ok");
+    }).catch(() => setHelp(t("rewardTooLarge"), "warn"));
+    reader.readAsDataURL(file);
+  }
+
+  function resizeRewardImage(src){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 1200;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", .86);
+        if (dataUrl.length > 4500000) reject(new Error("too large"));
+        else resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
   els.start.onclick = () => running ? pause() : start();
   els.reset.onclick = reset;
   els.skip.onclick = skip;
@@ -856,6 +952,22 @@
   els.openMedia.onclick = openMedia;
   els.stopMedia.onclick = stopMedia;
   els.testSound.onclick = playSelectedSound;
+  els.previewReward.onclick = () => showReward(true);
+  els.closeReward.onclick = hideReward;
+  els.rewardModal.onclick = (event) => {
+    if (event.target === els.rewardModal) hideReward();
+  };
+  els.clearReward.onclick = () => {
+    saved.rewardImage = "";
+    updateRewardPreview();
+    save();
+    setHelp(t("rewardCleared"), "ok");
+  };
+  els.rewardFile.onchange = () => {
+    const file = els.rewardFile.files && els.rewardFile.files[0];
+    if (file) readRewardImage(file);
+    els.rewardFile.value = "";
+  };
   els.pinTask.onclick = () => {
     addLog({mode:t("memo"), minutes:0, task:els.task.value || t("taskMemo"), startedAt:Date.now()});
     save();
@@ -903,7 +1015,7 @@
       render();
     });
   });
-  [els.autoNext, els.soundOn, els.soundPattern].forEach(input => input.addEventListener("change", save));
+  [els.autoNext, els.soundOn, els.rewardOn, els.soundPattern].forEach(input => input.addEventListener("change", save));
 
   els.envBadge.textContent = window.isSecureContext ? "secure" : "local file";
   if ("Notification" in window && Notification.permission === "granted") els.notify.textContent = t("notifyOn");
