@@ -13,6 +13,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - タスク名つきログのブラウザ保存
 - 途中で止めた集中時間のログ反映
 - CSV / JSON でのログ書き出し
+- 今日の作業ログを正方形PNGカードとして書き出し
 - JSON でのログ読み込み
 - Google Drive を開いて、書き出したログファイルを共有
 - YouTube / YouTube Music への導線と、動画 URL の埋め込み表示

@@ -261,6 +261,7 @@
           <button id="exportJson">JSON</button>
           <button id="shareJson" data-i18n="share">共有</button>
           <button id="importJson" data-i18n="import">読込</button>
+          <button id="exportCard" data-i18n="exportCard">成果PNG</button>
         </div>
         <input id="importFile" type="file" accept="application/json,.json">
         <div class="grid-2">
@@ -297,7 +298,7 @@
     help: $("#help"), mediaUrl: $("#mediaUrl"), bgmTitle: $("#bgmTitle"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
     exportCsv: $("#exportCsv"), exportJson: $("#exportJson"), shareJson: $("#shareJson"),
-    importJson: $("#importJson"), importFile: $("#importFile"),
+    importJson: $("#importJson"), importFile: $("#importFile"), exportCard: $("#exportCard"),
     openDrive: $("#openDrive"), clearLogs: $("#clearLogs"),
     rewardFile: $("#rewardFile"), rewardPreview: $("#rewardPreview"), previewReward: $("#previewReward"),
     clearReward: $("#clearReward"), rewardModal: $("#rewardModal"), rewardImageView: $("#rewardImageView"),
@@ -324,7 +325,7 @@
       testSound:"試聴",
       autoNext:"終了後に次を自動開始", soundOn:"終了音", rewardOn:"集中完了時にご褒美画像",
       rewardImage:"ご褒美画像", previewReward:"表示テスト", clearReward:"画像削除", rewardTitle:"おつかれさま！", closeReward:"閉じる",
-      log:"ログ", share:"共有", import:"読込",
+      log:"ログ", share:"共有", import:"読込", exportCard:"成果PNG",
       clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", partial:"中断", runningSuffix:"中",
       emptyLog:"まだログはありません。", untitled:"無題", memo:"メモ", taskMemo:"タスクメモ", breakTask:"休憩",
       logsCount:(n) => `${n}件`, minutesSuffix:"m",
@@ -358,7 +359,7 @@
       testSound:"Test",
       autoNext:"Auto-start next session", soundOn:"End sound", rewardOn:"Reward image after focus",
       rewardImage:"Reward image", previewReward:"Preview", clearReward:"Clear image", rewardTitle:"Nice work!", closeReward:"Close",
-      log:"Log", share:"Share", import:"Import",
+      log:"Log", share:"Share", import:"Import", exportCard:"Card PNG",
       clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", partial:"partial", runningSuffix:"",
       emptyLog:"No logs yet.", untitled:"Untitled", memo:"Memo", taskMemo:"Task memo", breakTask:"Break",
       logsCount:(n) => `${n} logs`, minutesSuffix:"m",
@@ -897,6 +898,164 @@
     setHelp(t("csvExported"), "ok");
   }
 
+  function exportWorkCard(){
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext("2d");
+    const card = buildCardData();
+    drawWorkCard(ctx, canvas, card);
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `pomodoro-card-${dateKey()}.png`;
+    a.click();
+  }
+
+  function buildCardData(){
+    const todayLogs = (saved.logs || []).filter(log => log.date === dateKey());
+    const focusLogs = todayLogs.filter(log => String(log.mode || "").includes(t("modeFocus")) || String(log.mode || "").toLowerCase().includes("focus"));
+    const breakLogs = todayLogs.filter(log => String(log.mode || "").includes(t("modeShort")) || String(log.mode || "").includes(t("modeLong")) || String(log.mode || "").toLowerCase().includes("break"));
+    const taskMap = new Map();
+    focusLogs.forEach(log => {
+      const name = log.task || t("untitled");
+      taskMap.set(name, (taskMap.get(name) || 0) + (Number(log.minutes) || 0));
+    });
+    const tasks = [...taskMap.entries()]
+      .map(([name, minutes]) => ({name, minutes}))
+      .sort((a, b) => b.minutes - a.minutes)
+      .slice(0, 3);
+    const total = focusLogs.reduce((sum, log) => sum + (Number(log.minutes) || 0), 0) || (saved.todayMinutes || 0);
+    const latestBgm = [...todayLogs].reverse().find(log => log.bgmTitle || log.bgmUrl) || {};
+    const now = new Date();
+    return {
+      date: now.toLocaleDateString("sv-SE").replaceAll("-", "."),
+      weekday: now.toLocaleDateString("en-US", {weekday:"short"}),
+      focusMinutes: total,
+      focusTime: minutesToHm(total),
+      focusSessions: focusLogs.length || (saved.today || 0),
+      breakSessions: breakLogs.length,
+      tasks: tasks.length ? tasks : [{name:t("untitled"), minutes:total || 0}],
+      bgmTitle: latestBgm.bgmTitle || els.bgmTitle.value || "BGM",
+      bgmUrl: latestBgm.bgmUrl || els.mediaUrl.value || "https://itsukiisamu.github.io/pomodoro-desk/",
+      appUrl: "https://itsukiisamu.github.io/pomodoro-desk/"
+    };
+  }
+
+  function minutesToHm(minutes){
+    const h = Math.floor((Number(minutes) || 0) / 60);
+    const m = (Number(minutes) || 0) % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  function drawWorkCard(ctx, canvas, data){
+    const w = canvas.width;
+    const h = canvas.height;
+    const roundRect = (x, y, width, height, radius) => {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + width, y, x + width, y + height, radius);
+      ctx.arcTo(x + width, y + height, x, y + height, radius);
+      ctx.arcTo(x, y + height, x, y, radius);
+      ctx.arcTo(x, y, x + width, y, radius);
+      ctx.closePath();
+    };
+    const text = (value, x, y, size, color, weight = 500, align = "left") => {
+      ctx.fillStyle = color;
+      ctx.font = `${weight} ${size}px system-ui, -apple-system, Segoe UI, sans-serif`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(value, x, y);
+    };
+    const ellipsis = (value, maxWidth, size) => {
+      const source = String(value || "");
+      ctx.font = `500 ${size}px system-ui, -apple-system, Segoe UI, sans-serif`;
+      if (ctx.measureText(source).width <= maxWidth) return source;
+      let clipped = source;
+      while (clipped.length > 0 && ctx.measureText(`${clipped}...`).width > maxWidth) clipped = clipped.slice(0, -1);
+      return `${clipped}...`;
+    };
+    const fakeQr = (x, y, size) => {
+      const cells = 21;
+      const cell = size / cells;
+      ctx.fillStyle = "#f7d0c7";
+      roundRect(x - 14, y - 14, size + 28, size + 28, 18);
+      ctx.fill();
+      ctx.fillStyle = "#2b0909";
+      const finder = (cx, cy) => {
+        ctx.fillRect(x + cx * cell, y + cy * cell, cell * 7, cell * 7);
+        ctx.fillStyle = "#f7d0c7";
+        ctx.fillRect(x + (cx + 1.3) * cell, y + (cy + 1.3) * cell, cell * 4.4, cell * 4.4);
+        ctx.fillStyle = "#2b0909";
+        ctx.fillRect(x + (cx + 2.5) * cell, y + (cy + 2.5) * cell, cell * 2, cell * 2);
+      };
+      finder(0, 0); finder(14, 0); finder(0, 14);
+      for (let r = 0; r < cells; r++) {
+        for (let c = 0; c < cells; c++) {
+          const inFinder = (r < 7 && c < 7) || (r < 7 && c > 13) || (r > 13 && c < 7);
+          if (!inFinder && ((r * 11 + c * 7 + r * c) % 5 === 0 || (r + c) % 11 === 0)) {
+            ctx.fillRect(x + c * cell, y + r * cell, Math.ceil(cell), Math.ceil(cell));
+          }
+        }
+      }
+    };
+
+    ctx.fillStyle = "#181b22";
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = .08;
+    for (let i = 0; i < 38; i++) {
+      ctx.beginPath();
+      ctx.arc(120 + i * 31, 160 + Math.sin(i) * 80, 3 + (i % 4), 0, Math.PI * 2);
+      ctx.fillStyle = i % 2 ? "#f2a08f" : "#70a98a";
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    text("#pomodoro-desk", 72, 96, 18, "#a4adbb", 500);
+    text(`${data.date} ${data.weekday}`, 1008, 96, 24, "#d9a79d", 500, "right");
+    text("今日の作業ログ", 72, 176, 54, "#fff1eb", 700);
+    text("Today's Task Log", 76, 224, 28, "#f3b8ad", 600);
+    text("🍅".repeat(Math.min(12, data.focusSessions || 0)), 1008, 190, 31, "#fff1eb", 500, "right");
+    text(data.focusTime, 72, 350, 132, "#fff1eb", 800);
+    text(`${data.focusMinutes} min`, 390, 328, 34, "#f3b8ad", 600);
+    text(`Focus ${data.focusSessions} / Break ${data.breakSessions}`, 390, 376, 28, "#f1c5bc", 600);
+
+    roundRect(72, 440, 600, 304, 28);
+    ctx.fillStyle = "rgba(20, 6, 6, .46)";
+    ctx.fill();
+    text("WORK LOG", 108, 496, 22, "#f3b8ad", 700);
+    let y = 552;
+    const max = Math.max(1, ...data.tasks.map(task => task.minutes));
+    data.tasks.forEach((task, index) => {
+      text(ellipsis(task.name, 410, 28), 108, y, 28, "#fff1eb", 600);
+      text(`${task.minutes}m`, 636, y, 24, "#f3b8ad", 600, "right");
+      ctx.fillStyle = "rgba(255, 240, 232, .16)";
+      roundRect(108, y + 18, 500, 14, 7);
+      ctx.fill();
+      ctx.fillStyle = index === 2 ? "#70a98a" : "#e56a5f";
+      roundRect(108, y + 18, 500 * task.minutes / max, 14, 7);
+      ctx.fill();
+      y += 76;
+    });
+
+    roundRect(716, 440, 292, 304, 28);
+    ctx.fillStyle = "rgba(20, 6, 6, .46)";
+    ctx.fill();
+    text("SESSIONS", 752, 496, 22, "#f3b8ad", 700);
+    text("Focus", 752, 568, 30, "#f1c5bc", 600);
+    text(String(data.focusSessions), 970, 568, 50, "#fff1eb", 800, "right");
+    text("Break", 752, 640, 30, "#f1c5bc", 600);
+    text(String(data.breakSessions), 970, 640, 50, "#fff1eb", 800, "right");
+
+    roundRect(72, 804, 936, 154, 30);
+    ctx.fillStyle = "rgba(255, 221, 211, .12)";
+    ctx.fill();
+    text("BGM", 108, 852, 20, "#f3b8ad", 700);
+    text(ellipsis(data.bgmTitle, 610, 30), 108, 896, 30, "#fff1eb", 600);
+    text(ellipsis(data.bgmUrl, 610, 22), 108, 934, 22, "#f1c5bc", 500);
+    fakeQr(810, 824, 104);
+    text(data.appUrl, 540, 1004, 18, "#a4adbb", 500, "center");
+  }
+
   async function shareJson(){
     save();
     const file = new File([JSON.stringify(saved, null, 2)], exportName("json"), {type:"application/json"});
@@ -1023,6 +1182,7 @@
   };
   els.exportCsv.onclick = exportCsv;
   els.exportJson.onclick = exportJson;
+  els.exportCard.onclick = exportWorkCard;
   els.shareJson.onclick = () => shareJson().catch(() => exportJson());
   els.importJson.onclick = () => els.importFile.click();
   els.importFile.onchange = () => {
