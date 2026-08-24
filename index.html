@@ -336,7 +336,7 @@
       rewardType:"完了後の表示", rewardTypeImage:"ご褒美画像", rewardTypeTunnel:"目休めトンネル", rewardTypeSolar:"トマト宇宙",
       rewardImage:"ご褒美画像", previewReward:"表示テスト", clearReward:"画像削除", rewardTitle:"おつかれさま！", closeReward:"閉じる",
       log:"ログ", share:"共有", import:"読込", exportCard:"成果PNG",
-      clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", partial:"中断", runningSuffix:"中",
+      clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", partial:"中断", skipped:"スキップ", runningSuffix:"中",
       emptyLog:"まだログはありません。", untitled:"無題", memo:"メモ", taskMemo:"タスクメモ", breakTask:"休憩",
       logsCount:(n) => `${n}件`, minutesSuffix:"m",
       focusDoneTitle:"集中おつかれさま", breakDoneTitle:"休憩終了",
@@ -371,7 +371,7 @@
       rewardType:"After-focus display", rewardTypeImage:"Reward image", rewardTypeTunnel:"Eye-rest tunnel", rewardTypeSolar:"Tomato space",
       rewardImage:"Reward image", previewReward:"Preview", clearReward:"Clear image", rewardTitle:"Nice work!", closeReward:"Close",
       log:"Log", share:"Share", import:"Import", exportCard:"Card PNG",
-      clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", partial:"partial", runningSuffix:"",
+      clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", partial:"partial", skipped:"skipped", runningSuffix:"",
       emptyLog:"No logs yet.", untitled:"Untitled", memo:"Memo", taskMemo:"Task memo", breakTask:"Break",
       logsCount:(n) => `${n} logs`, minutesSuffix:"m",
       focusDoneTitle:"Focus complete", breakDoneTitle:"Break finished",
@@ -650,7 +650,7 @@
     remainingMs = durationMs(mode);
     save();
     render();
-    if (els.autoNext.checked) start();
+    if (els.autoNext.checked && finished !== "long") start();
   }
 
   function addLog({mode, minutes, task, startedAt}){
@@ -690,13 +690,25 @@
   }
 
   function skip(){
-    capturePartialFocus();
     running = false;
     stopInterval();
     endAt = null;
-    startedAt = null;
     const target = clamp(els.targetRounds.value, 1, 12);
-    mode = mode === "focus" ? ((saved.round || 0) >= target - 1 ? "long" : "short") : "focus";
+    if (mode === "focus") {
+      const minutes = startedAt ? actualElapsedMinutes("focus") : 0;
+      if (minutes > 0) {
+        saved.todayMinutes = (saved.todayMinutes || 0) + minutes;
+        addLog({mode:`${modeLabel("focus")} (${t("skipped")})`, minutes, task:els.task.value, startedAt});
+      }
+      saved.today = (saved.today || 0) + 1;
+      saved.round = (saved.round || 0) + 1;
+      const goesLong = saved.round >= target;
+      mode = goesLong ? "long" : "short";
+      if (goesLong) saved.round = 0;
+    } else {
+      mode = "focus";
+    }
+    startedAt = null;
     remainingMs = durationMs(mode);
     save();
     render();
