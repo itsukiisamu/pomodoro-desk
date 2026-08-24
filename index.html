@@ -325,7 +325,7 @@
       autoNext:"終了後に次を自動開始", soundOn:"終了音", rewardOn:"集中完了時にご褒美画像",
       rewardImage:"ご褒美画像", previewReward:"表示テスト", clearReward:"画像削除", rewardTitle:"おつかれさま！", closeReward:"閉じる",
       log:"ログ", share:"共有", import:"読込",
-      clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", runningSuffix:"中",
+      clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", partial:"中断", runningSuffix:"中",
       emptyLog:"まだログはありません。", untitled:"無題", memo:"メモ", taskMemo:"タスクメモ", breakTask:"休憩",
       logsCount:(n) => `${n}件`, minutesSuffix:"m",
       focusDoneTitle:"集中おつかれさま", breakDoneTitle:"休憩終了",
@@ -359,7 +359,7 @@
       autoNext:"Auto-start next session", soundOn:"End sound", rewardOn:"Reward image after focus",
       rewardImage:"Reward image", previewReward:"Preview", clearReward:"Clear image", rewardTitle:"Nice work!", closeReward:"Close",
       log:"Log", share:"Share", import:"Import",
-      clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", runningSuffix:"",
+      clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", partial:"partial", runningSuffix:"",
       emptyLog:"No logs yet.", untitled:"Untitled", memo:"Memo", taskMemo:"Task memo", breakTask:"Break",
       logsCount:(n) => `${n} logs`, minutesSuffix:"m",
       focusDoneTitle:"Focus complete", breakDoneTitle:"Break finished",
@@ -554,6 +554,7 @@
   }
 
   function setMode(next, preserve = false){
+    capturePartialFocus();
     mode = next;
     running = false;
     endAt = null;
@@ -578,6 +579,7 @@
   function pause(){
     if (!running) return;
     remainingMs = Math.max(0, endAt - Date.now());
+    capturePartialFocus();
     running = false;
     endAt = null;
     stopInterval();
@@ -585,6 +587,7 @@
   }
 
   function reset(){
+    capturePartialFocus();
     running = false;
     endAt = null;
     startedAt = null;
@@ -606,7 +609,7 @@
 
   function complete(){
     const finished = mode;
-    const minutes = Math.round(durationMs(finished) / 60000);
+    const minutes = actualElapsedMinutes(finished);
     running = false;
     stopInterval();
     endAt = null;
@@ -652,7 +655,27 @@
     }].slice(-1000);
   }
 
+  function actualElapsedMinutes(finishedMode){
+    if (!startedAt) return Math.round(durationMs(finishedMode) / 60000);
+    return Math.max(1, Math.round((Date.now() - startedAt) / 60000));
+  }
+
+  function capturePartialFocus(){
+    if (mode !== "focus" || !startedAt) return;
+    const elapsedMs = Date.now() - startedAt;
+    const minutes = Math.floor(elapsedMs / 60000);
+    if (minutes < 1) {
+      startedAt = null;
+      return;
+    }
+    saved.todayMinutes = (saved.todayMinutes || 0) + minutes;
+    addLog({mode:`${modeLabel("focus")} (${t("partial")})`, minutes, task:els.task.value, startedAt});
+    startedAt = null;
+    save();
+  }
+
   function skip(){
+    capturePartialFocus();
     running = false;
     stopInterval();
     endAt = null;
@@ -768,11 +791,12 @@
           .box{text-align:center;width:100%;padding:18px}
           #pipTime{font-size:62px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:0}
           #pipStatus{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:7px 0 15px}
+          #pipRounds{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin:-8px 0 15px}
           .row{display:flex;gap:8px;justify-content:center}
           button{border:0;border-radius:8px;padding:9px 18px;background:var(--panel2);color:var(--text);font-size:18px;cursor:pointer}
           #pipStart{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
         </style>`;
-      d.body.innerHTML = `<div class="box"><div id="pipTime"></div><div id="pipStatus"></div>
+      d.body.innerHTML = `<div class="box"><div id="pipTime"></div><div id="pipStatus"></div><div id="pipRounds"></div>
         <div class="row"><button id="pipStart">▶</button><button id="pipReset">↺</button></div></div>`;
       d.getElementById("pipStart").onclick = () => running ? pause() : start();
       d.getElementById("pipReset").onclick = reset;
@@ -787,11 +811,13 @@
     if (!pipWindow || pipWindow.closed) return;
     applyPiPTheme();
     const d = pipWindow.document;
-    const t = d.getElementById("pipTime");
+    const timeEl = d.getElementById("pipTime");
     const st = d.getElementById("pipStatus");
+    const rounds = d.getElementById("pipRounds");
     const bt = d.getElementById("pipStart");
-    if (t) t.textContent = text;
+    if (timeEl) timeEl.textContent = text;
     if (st) st.textContent = els.status.textContent;
+    if (rounds) rounds.textContent = `${t("roundProgress")} ${saved.round || 0} / ${clamp(els.targetRounds.value, 1, 12)}`;
     if (bt) bt.textContent = running ? "||" : ">";
   }
 

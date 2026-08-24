@@ -11,6 +11,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - 集中時間、休憩時間、長い休憩までのセット数の変更
 - 今日の集中回数、セット進捗、集中分数の表示
 - タスク名つきログのブラウザ保存
+- 途中で止めた集中時間のログ反映
 - CSV / JSON でのログ書き出し
 - JSON でのログ読み込み
 - Google Drive を開いて、書き出したログファイルを共有
@@ -48,3 +49,4 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - ローカル稼働版では動画タイトルを自動取得しないため、BGMタイトルは手入力
 - Google Drive 共有はファイルのエクスポート / インポート方式
 - 小窓表示は対応ブラウザ、HTTPS、または localhost で利用可能
+- 集中を途中で止めた場合は、1分以上の実行分を中断ログとして保存
