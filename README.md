@@ -3,6 +3,8 @@
 YouTube や YouTube Music を開きながら使う、単一 HTML のポモドーロタイマーです。
 ブラウザだけで動き、集中ログは localStorage に保存します。
 
+https://itsukiisamu.github.io/pomodoro-desk/
+
 ## できること
 
 - 集中、短い休憩、長い休憩のタイマー管理
