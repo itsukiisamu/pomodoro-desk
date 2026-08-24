@@ -100,6 +100,7 @@
     .summary-icon{font-size:15px; line-height:1}
     .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px}
     .grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px}
+    .sound-row{display:grid; grid-template-columns:minmax(0,1fr) 90px; gap:8px}
     .toggles{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:13px; color:var(--muted)}
     .toggles label{display:flex; align-items:center; gap:7px}
     .toggles input{width:auto; min-height:auto}
@@ -204,13 +205,16 @@
               </select>
             </label>
             <label><span data-i18n="soundPattern">終了音タイプ</span>
-              <select id="soundPattern">
-                <option value="chime3" data-i18n="soundChime3">チャイム 3秒</option>
-                <option value="chime5" data-i18n="soundChime5">チャイム 5秒</option>
-                <option value="chime10" data-i18n="soundChime10">チャイム 10秒</option>
-                <option value="cq1" data-i18n="soundCq1">CQ音 1回</option>
-                <option value="cq3" data-i18n="soundCq3">CQ音 3回</option>
-              </select>
+              <span class="sound-row">
+                <select id="soundPattern">
+                  <option value="chime3" data-i18n="soundChime3">チャイム 3秒</option>
+                  <option value="chime5" data-i18n="soundChime5">チャイム 5秒</option>
+                  <option value="chime10" data-i18n="soundChime10">チャイム 10秒</option>
+                  <option value="cq1" data-i18n="soundCq1">CQ音 1回</option>
+                  <option value="cq3" data-i18n="soundCq3">CQ音 3回</option>
+                </select>
+                <button id="testSound" type="button" data-i18n="testSound">試聴</button>
+              </span>
             </label>
           </div>
           <div class="toggles">
@@ -254,7 +258,7 @@
     todayMinutes: $("#todayMinutes"), clearToday: $("#clearToday"),
     focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
-    theme: $("#theme"), soundPattern: $("#soundPattern"), language: $("#language"),
+    theme: $("#theme"), soundPattern: $("#soundPattern"), testSound: $("#testSound"), language: $("#language"),
     autoNext: $("#autoNext"), soundOn: $("#soundOn"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
@@ -280,6 +284,7 @@
       themeDark:"ダーク", themeLight:"ライト", themeSystem:"PC設定追従", themeTomato:"柔らかいトマト色",
       soundPattern:"終了音タイプ", soundChime3:"チャイム 3秒", soundChime5:"チャイム 5秒",
       soundChime10:"チャイム 10秒", soundCq1:"CQ音 1回", soundCq3:"CQ音 3回",
+      testSound:"試聴",
       autoNext:"終了後に次を自動開始", soundOn:"終了音", log:"ログ", share:"共有", import:"読込",
       clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", runningSuffix:"中",
       emptyLog:"まだログはありません。", untitled:"無題", memo:"メモ", taskMemo:"タスクメモ", breakTask:"休憩",
@@ -307,6 +312,7 @@
       themeDark:"Dark", themeLight:"Light", themeSystem:"Follow system", themeTomato:"Soft tomato",
       soundPattern:"End sound type", soundChime3:"Chime 3 sec", soundChime5:"Chime 5 sec",
       soundChime10:"Chime 10 sec", soundCq1:"CQ once", soundCq3:"CQ three times",
+      testSound:"Test",
       autoNext:"Auto-start next session", soundOn:"End sound", log:"Log", share:"Share", import:"Import",
       clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", runningSuffix:"",
       emptyLog:"No logs yet.", untitled:"Untitled", memo:"Memo", taskMemo:"Task memo", breakTask:"Break",
@@ -601,6 +607,10 @@
 
   function beep(){
     if (!els.soundOn.checked) return;
+    playSelectedSound();
+  }
+
+  function playSelectedSound(){
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const pattern = els.soundPattern.value || "chime3";
@@ -845,6 +855,7 @@
   els.notify.onclick = requestNotify;
   els.openMedia.onclick = openMedia;
   els.stopMedia.onclick = stopMedia;
+  els.testSound.onclick = playSelectedSound;
   els.pinTask.onclick = () => {
     addLog({mode:t("memo"), minutes:0, task:els.task.value || t("taskMemo"), startedAt:Date.now()});
     save();
