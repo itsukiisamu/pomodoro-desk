@@ -203,6 +203,15 @@
                 <option value="tomato" data-i18n="themeTomato">柔らかいトマト色</option>
               </select>
             </label>
+            <label><span data-i18n="soundPattern">終了音タイプ</span>
+              <select id="soundPattern">
+                <option value="chime3" data-i18n="soundChime3">チャイム 3秒</option>
+                <option value="chime5" data-i18n="soundChime5">チャイム 5秒</option>
+                <option value="chime10" data-i18n="soundChime10">チャイム 10秒</option>
+                <option value="cq1" data-i18n="soundCq1">CQ音 1回</option>
+                <option value="cq3" data-i18n="soundCq3">CQ音 3回</option>
+              </select>
+            </label>
           </div>
           <div class="toggles">
             <label><input id="autoNext" type="checkbox"> <span data-i18n="autoNext">終了後に次を自動開始</span></label>
@@ -245,7 +254,7 @@
     todayMinutes: $("#todayMinutes"), clearToday: $("#clearToday"),
     focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
-    theme: $("#theme"), language: $("#language"),
+    theme: $("#theme"), soundPattern: $("#soundPattern"), language: $("#language"),
     autoNext: $("#autoNext"), soundOn: $("#soundOn"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
@@ -269,6 +278,8 @@
       settings:"設定", focusMinutes:"集中（分）", shortMinutes:"短い休憩（分）", longMinutes:"長い休憩（分）",
       targetRounds:"長い休憩までのセット数", logLimit:"ログ表示件数", theme:"配色",
       themeDark:"ダーク", themeLight:"ライト", themeSystem:"PC設定追従", themeTomato:"柔らかいトマト色",
+      soundPattern:"終了音タイプ", soundChime3:"チャイム 3秒", soundChime5:"チャイム 5秒",
+      soundChime10:"チャイム 10秒", soundCq1:"CQ音 1回", soundCq3:"CQ音 3回",
       autoNext:"終了後に次を自動開始", soundOn:"終了音", log:"ログ", share:"共有", import:"読込",
       clearLogs:"全ログ削除", ready:"準備完了", paused:"一時停止", runningSuffix:"中",
       emptyLog:"まだログはありません。", untitled:"無題", memo:"メモ", taskMemo:"タスクメモ", breakTask:"休憩",
@@ -294,6 +305,8 @@
       settings:"Settings", focusMinutes:"Focus minutes", shortMinutes:"Short break minutes", longMinutes:"Long break minutes",
       targetRounds:"Rounds before long break", logLimit:"Log rows to show", theme:"Theme",
       themeDark:"Dark", themeLight:"Light", themeSystem:"Follow system", themeTomato:"Soft tomato",
+      soundPattern:"End sound type", soundChime3:"Chime 3 sec", soundChime5:"Chime 5 sec",
+      soundChime10:"Chime 10 sec", soundCq1:"CQ once", soundCq3:"CQ three times",
       autoNext:"Auto-start next session", soundOn:"End sound", log:"Log", share:"Share", import:"Import",
       clearLogs:"Clear all logs", ready:"Ready", paused:"Paused", runningSuffix:"",
       emptyLog:"No logs yet.", untitled:"Untitled", memo:"Memo", taskMemo:"Task memo", breakTask:"Break",
@@ -352,6 +365,7 @@
     els.targetRounds.value = saved.targetRounds || 4;
     els.logLimit.value = saved.logLimit || 20;
     els.theme.value = saved.theme || "dark";
+    els.soundPattern.value = saved.soundPattern || "chime3";
     applyTheme(els.theme.value);
     els.language.value = saved.language || "ja";
     applyLanguage(els.language.value);
@@ -374,6 +388,7 @@
       targetRounds: clamp(els.targetRounds.value, 1, 12),
       logLimit: clamp(els.logLimit.value, 5, 100),
       theme: els.theme.value,
+      soundPattern: els.soundPattern.value,
       language: els.language.value,
       task: els.task.value,
       mediaUrl: els.mediaUrl.value,
@@ -588,26 +603,63 @@
     if (!els.soundOn.checked) return;
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const notes = [660, 880, 660];
-      const now = ctx.currentTime;
-      notes.forEach((freq, index) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        const start = now + index * .48;
-        const end = start + .36;
-        o.type = "sine";
-        o.frequency.value = freq;
-        g.gain.setValueAtTime(0, start);
-        g.gain.linearRampToValueAtTime(.09, start + .04);
-        g.gain.setValueAtTime(.09, end - .07);
-        g.gain.linearRampToValueAtTime(0, end);
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start(start);
-        o.stop(end);
-      });
-      setTimeout(() => ctx.close(), 1700);
+      const pattern = els.soundPattern.value || "chime3";
+      const totalMs = pattern === "chime10" ? 10000 : pattern === "chime5" ? 5000 : 3000;
+      const length = pattern === "cq3" ? playCq(ctx, 3) : pattern === "cq1" ? playCq(ctx, 1) : playChime(ctx, totalMs / 1000);
+      setTimeout(() => ctx.close(), Math.ceil(length * 1000) + 300);
     } catch {}
+  }
+
+  function tone(ctx, freq, start, duration, gain = .08, type = "sine"){
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    const end = start + duration;
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(gain, start + .025);
+    g.gain.setValueAtTime(gain, Math.max(start + .03, end - .05));
+    g.gain.linearRampToValueAtTime(0, end);
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start(start);
+    o.stop(end);
+  }
+
+  function playChime(ctx, seconds){
+    const motif = [660, 880, 784, 988];
+    const now = ctx.currentTime;
+    const step = .5;
+    const count = Math.max(1, Math.floor(seconds / step));
+    for (let i = 0; i < count; i++) {
+      tone(ctx, motif[i % motif.length], now + i * step, .28, .075);
+    }
+    tone(ctx, 660, now + seconds - .38, .34, .06);
+    return seconds;
+  }
+
+  function playCq(ctx, repeats){
+    const unit = .09;
+    const gap = unit;
+    const letterGap = unit * 3;
+    const wordGap = unit * 7;
+    const dash = unit * 3;
+    const freq = 720;
+    let at = ctx.currentTime;
+    const playSymbol = (duration) => {
+      tone(ctx, freq, at, duration, .085, "sine");
+      at += duration + gap;
+    };
+    const playLetter = (symbols) => {
+      symbols.forEach(symbol => playSymbol(symbol === "-" ? dash : unit));
+      at += letterGap - gap;
+    };
+    for (let i = 0; i < repeats; i++) {
+      playLetter(["-",".","-","."]);
+      playLetter(["-","-",".","-"]);
+      at += wordGap - letterGap;
+    }
+    return at - ctx.currentTime;
   }
 
   function notifyFinished(){
@@ -768,7 +820,7 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","theme","language"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","theme","soundPattern","language"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
@@ -840,7 +892,7 @@
       render();
     });
   });
-  [els.autoNext, els.soundOn].forEach(input => input.addEventListener("change", save));
+  [els.autoNext, els.soundOn, els.soundPattern].forEach(input => input.addEventListener("change", save));
 
   els.envBadge.textContent = window.isSecureContext ? "secure" : "local file";
   if ("Notification" in window && Notification.permission === "granted") els.notify.textContent = t("notifyOn");
