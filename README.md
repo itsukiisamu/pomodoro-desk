@@ -23,6 +23,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - 終了音タイプの変更（チャイム 3秒 / 5秒 / 10秒、CQ音 1回 / 3回）
 - 終了音の試聴
 - 集中完了時のご褒美画像ポップアップ
+- 集中完了時の目休めアニメーション（トンネル / トマト宇宙）
 - ダーク、ライト、PC設定追従、柔らかいトマト色の配色切替
 - 日本語 / 英語の表示切替
 - 小窓表示の配色追従
@@ -32,6 +33,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 
 - Google アカウントへの直接ログインや自動同期
 - YouTube / YouTube Music のタイトル自動取得
+- 読み取り可能なQRコード生成
 - 別タブで開いた YouTube / YouTube Music の再生制御や広告制御
 - サーバー保存、ユーザー管理、チーム管理
 - 複雑な分析ダッシュボード
