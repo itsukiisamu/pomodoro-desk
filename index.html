@@ -103,7 +103,7 @@
     .toggles{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:13px; color:var(--muted)}
     .toggles label{display:flex; align-items:center; gap:7px}
     .toggles input{width:auto; min-height:auto}
-    .media-row{display:grid; grid-template-columns:minmax(0,1fr) 46px; gap:8px; margin-top:12px}
+    .media-row{display:grid; grid-template-columns:minmax(0,1fr) 46px 46px; gap:8px; margin-top:12px}
     .player{margin-top:10px; aspect-ratio:16/9; background:var(--player-bg); border:1px solid var(--line); border-radius:8px; overflow:hidden}
     .player iframe{width:100%; height:100%; border:0; display:block}
     .player.empty{display:none}
@@ -173,7 +173,8 @@
           <label><span>YouTube / YouTube Music URL</span></label>
           <div class="media-row">
             <input id="mediaUrl" placeholder="https://www.youtube.com/watch?v=..." />
-            <button id="openMedia" class="icon-btn" title="開く">↗</button>
+            <button id="openMedia" class="icon-btn" data-i18n-title="openMediaTitle" title="開く">↗</button>
+            <button id="stopMedia" class="icon-btn" data-i18n-title="stopMediaTitle" title="埋め込み再生を停止">■</button>
           </div>
           <div id="player" class="player empty"></div>
           <div class="links">
@@ -246,7 +247,7 @@
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
     theme: $("#theme"), language: $("#language"),
     autoNext: $("#autoNext"), soundOn: $("#soundOn"), envBadge: $("#envBadge"),
-    help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"),
+    help: $("#help"), mediaUrl: $("#mediaUrl"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
     exportCsv: $("#exportCsv"), exportJson: $("#exportJson"), shareJson: $("#shareJson"),
     importJson: $("#importJson"), importFile: $("#importFile"),
@@ -277,6 +278,7 @@
       notifyUnsupported:"このブラウザは通知APIに対応していません。",
       pipUnsupported:"小窓はChrome系ブラウザでHTTPSまたはlocalhostから開くと利用できます。",
       pipFailed:"小窓を開けませんでした。対応ブラウザと開き方を確認してください。",
+      openMediaTitle:"開く", stopMediaTitle:"埋め込み再生を停止",
       jsonExported:"JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。",
       csvExported:"CSVを書き出しました。Sheetsに読み込めます。",
       jsonImported:"JSONログを読み込みました。", jsonImportFailed:"JSONを読み込めませんでした。",
@@ -301,6 +303,7 @@
       notifyUnsupported:"This browser does not support notifications.",
       pipUnsupported:"Mini window works in Chromium browsers over HTTPS or localhost.",
       pipFailed:"Could not open the mini window. Check your browser and how the page is opened.",
+      openMediaTitle:"Open", stopMediaTitle:"Stop embedded playback",
       jsonExported:"Exported JSON. Put it on Google Drive and import it in another browser.",
       csvExported:"Exported CSV. You can import it into Sheets.",
       jsonImported:"Imported JSON log.", jsonImportFailed:"Could not import that JSON file.",
@@ -585,14 +588,25 @@
     if (!els.soundOn.checked) return;
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.frequency.value = 720;
-      g.gain.value = .08;
-      o.start();
-      setTimeout(() => { o.stop(); ctx.close(); }, 420);
+      const notes = [660, 880, 660];
+      const now = ctx.currentTime;
+      notes.forEach((freq, index) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        const start = now + index * .48;
+        const end = start + .36;
+        o.type = "sine";
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0, start);
+        g.gain.linearRampToValueAtTime(.09, start + .04);
+        g.gain.setValueAtTime(.09, end - .07);
+        g.gain.linearRampToValueAtTime(0, end);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(start);
+        o.stop(end);
+      });
+      setTimeout(() => ctx.close(), 1700);
     } catch {}
   }
 
@@ -685,6 +699,11 @@
     }
   }
 
+  function stopMedia(){
+    els.player.innerHTML = "";
+    els.player.classList.add("empty");
+  }
+
   function youtubeEmbedUrl(raw){
     try {
       const url = new URL(raw);
@@ -773,6 +792,7 @@
   els.pip.onclick = openPiP;
   els.notify.onclick = requestNotify;
   els.openMedia.onclick = openMedia;
+  els.stopMedia.onclick = stopMedia;
   els.pinTask.onclick = () => {
     addLog({mode:t("memo"), minutes:0, task:els.task.value || t("taskMemo"), startedAt:Date.now()});
     save();

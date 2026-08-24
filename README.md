@@ -15,6 +15,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - JSON でのログ読み込み
 - Google Drive を開いて、書き出したログファイルを共有
 - YouTube / YouTube Music への導線と、動画 URL の埋め込み表示
+- 埋め込み表示した YouTube 動画の停止
 - 通知、終了音、小窓表示
 - ダーク、ライト、PC設定追従、柔らかいトマト色の配色切替
 - 日本語 / 英語の表示切替
@@ -24,7 +25,7 @@ https://itsukiisamu.github.io/pomodoro-desk/
 ## やらないこと
 
 - Google アカウントへの直接ログインや自動同期
-- YouTube の再生制御や広告制御
+- 別タブで開いた YouTube / YouTube Music の再生制御や広告制御
 - サーバー保存、ユーザー管理、チーム管理
 - 複雑な分析ダッシュボード
 
