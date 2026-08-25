@@ -220,6 +220,7 @@
           <div class="grid-2">
             <label><span data-i18n="targetRounds">長い休憩までのセット数</span><input id="targetRounds" type="number" min="1" max="12" value="4"></label>
             <label><span data-i18n="logLimit">ログ表示件数</span><input id="logLimit" type="number" min="5" max="100" value="20"></label>
+            <label><span data-i18n="dayBoundaryHour">日付変更線（時）</span><input id="dayBoundaryHour" type="number" min="0" max="23" value="0"></label>
           </div>
           <div class="grid-2">
             <label><span data-i18n="theme">配色</span>
@@ -312,7 +313,7 @@
     pinTask: $("#pinTask"), todayCount: $("#todayCount"), roundCount: $("#roundCount"),
     todayMinutes: $("#todayMinutes"), clearToday: $("#clearToday"),
     focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
-    targetRounds: $("#targetRounds"), logLimit: $("#logLimit"),
+    targetRounds: $("#targetRounds"), logLimit: $("#logLimit"), dayBoundaryHour: $("#dayBoundaryHour"),
     theme: $("#theme"), soundPattern: $("#soundPattern"), testSound: $("#testSound"), language: $("#language"),
     autoNext: $("#autoNext"), soundOn: $("#soundOn"), rewardOn: $("#rewardOn"), rewardType: $("#rewardType"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), bgmTitle: $("#bgmTitle"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
@@ -328,8 +329,15 @@
 
   const KEY = "pomodoro-desk-v2";
   const oldKey = "pomodoro-mini-v1";
-  const dateKey = () => new Date().toLocaleDateString("sv-SE");
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || min));
+  const dayBoundaryFrom = (state = null) => {
+    if (state?.dayBoundaryHour !== undefined) return clamp(state.dayBoundaryHour, 0, 23);
+    return clamp(els.dayBoundaryHour?.value ?? 0, 0, 23);
+  };
+  const dateKey = (date = new Date(), state = null) => {
+    const boundary = dayBoundaryFrom(state);
+    return new Date(date.getTime() - boundary * 60 * 60 * 1000).toLocaleDateString("sv-SE");
+  };
   const i18n = {
     ja: {
       modeFocus:"集中", modeShort:"短い休憩", modeLong:"長い休憩",
@@ -339,7 +347,7 @@
       pip:"小窓", pipTitle:"小窓", notify:"通知", notifyOn:"通知ON", notifyOff:"通知OFF", notifyTitle:"通知",
       clearToday:"タスクリセット", clearTodayTitle:"タスクの集中数・分数・セット進捗をリセット",
       settings:"設定", focusMinutes:"集中（分）", shortMinutes:"短い休憩（分）", longMinutes:"長い休憩（分）",
-      targetRounds:"長い休憩までのセット数", logLimit:"ログ表示件数", theme:"配色",
+      targetRounds:"長い休憩までのセット数", logLimit:"ログ表示件数", dayBoundaryHour:"日付変更線（時）", theme:"配色",
       themeDark:"ダーク", themeLight:"ライト", themeSystem:"PC設定追従", themeTomato:"柔らかいトマト色",
       soundPattern:"終了音タイプ", soundChime3:"チャイム 3秒", soundChime5:"チャイム 5秒",
       soundChime10:"チャイム 10秒", soundCq1:"CQ音 1回", soundCq3:"CQ音 3回",
@@ -378,7 +386,7 @@
       pip:"Mini window", pipTitle:"Mini window", notify:"Notify", notifyOn:"Notify ON", notifyOff:"Notify OFF", notifyTitle:"Notifications",
       clearToday:"Reset task", clearTodayTitle:"Reset focus count, minutes, and round progress for this task",
       settings:"Settings", focusMinutes:"Focus minutes", shortMinutes:"Short break minutes", longMinutes:"Long break minutes",
-      targetRounds:"Rounds before long break", logLimit:"Log rows to show", theme:"Theme",
+      targetRounds:"Rounds before long break", logLimit:"Log rows to show", dayBoundaryHour:"Day starts at", theme:"Theme",
       themeDark:"Dark", themeLight:"Light", themeSystem:"Follow system", themeTomato:"Soft tomato",
       soundPattern:"End sound type", soundChime3:"Chime 3 sec", soundChime5:"Chime 5 sec",
       soundChime10:"Chime 10 sec", soundCq1:"CQ once", soundCq3:"CQ three times",
@@ -436,8 +444,8 @@
       } catch {}
     }
     state ||= {};
-    if (state.date !== dateKey()) {
-      state.date = dateKey();
+    if (state.date !== dateKey(new Date(), state)) {
+      state.date = dateKey(new Date(), state);
       state.today = 0;
       state.round = 0;
       state.todayMinutes = 0;
@@ -452,6 +460,7 @@
     els.longMin.value = saved.longMin || 15;
     els.targetRounds.value = saved.targetRounds || 4;
     els.logLimit.value = saved.logLimit || 20;
+    els.dayBoundaryHour.value = saved.dayBoundaryHour ?? 0;
     els.theme.value = saved.theme || "dark";
     els.soundPattern.value = saved.soundPattern || "chime3";
     applyTheme(els.theme.value);
@@ -480,6 +489,7 @@
       longMin: clamp(els.longMin.value, 1, 120),
       targetRounds: clamp(els.targetRounds.value, 1, 12),
       logLimit: clamp(els.logLimit.value, 5, 100),
+      dayBoundaryHour: clamp(els.dayBoundaryHour.value, 0, 23),
       theme: els.theme.value,
       soundPattern: els.soundPattern.value,
       language: els.language.value,
@@ -496,6 +506,13 @@
   }
 
   function save(){
+    const currentDate = dateKey();
+    if (saved.date && saved.date !== currentDate) {
+      saved.date = currentDate;
+      saved.today = 0;
+      saved.round = 0;
+      saved.todayMinutes = 0;
+    }
     saved = {...saved, ...statePayload()};
     localStorage.setItem(KEY, JSON.stringify(saved));
   }
@@ -681,7 +698,7 @@
     const start = startedAt ? new Date(startedAt) : new Date(now.getTime() - minutes * 60000);
     saved.logs = [...(saved.logs || []), {
       id: crypto.randomUUID ? crypto.randomUUID() : String(now.getTime()),
-      date: now.toLocaleDateString("sv-SE"),
+      date: dateKey(now),
       time: now.toLocaleTimeString("ja-JP", {hour:"2-digit", minute:"2-digit"}),
       mode,
       minutes,
@@ -982,7 +999,8 @@
   }
 
   function buildCardData(){
-    const todayLogs = (saved.logs || []).filter(log => log.date === dateKey());
+    const workDate = dateKey();
+    const todayLogs = (saved.logs || []).filter(log => log.date === workDate);
     const focusLogs = todayLogs.filter(log => String(log.mode || "").includes(t("modeFocus")) || String(log.mode || "").toLowerCase().includes("focus"));
     const breakLogs = todayLogs.filter(log => String(log.mode || "").includes(t("modeShort")) || String(log.mode || "").includes(t("modeLong")) || String(log.mode || "").toLowerCase().includes("break"));
     const taskMap = new Map();
@@ -996,10 +1014,10 @@
       .slice(0, 3);
     const total = focusLogs.reduce((sum, log) => sum + (Number(log.minutes) || 0), 0) || (saved.todayMinutes || 0);
     const latestBgm = [...todayLogs].reverse().find(log => log.bgmTitle || log.bgmUrl) || {};
-    const now = new Date();
+    const displayDate = new Date(`${workDate}T12:00:00`);
     return {
-      date: now.toLocaleDateString("sv-SE").replaceAll("-", "."),
-      weekday: now.toLocaleDateString("en-US", {weekday:"short"}),
+      date: workDate.replaceAll("-", "."),
+      weekday: displayDate.toLocaleDateString("en-US", {weekday:"short"}),
       focusMinutes: total,
       focusTime: minutesToHm(total),
       focusSessions: focusLogs.length || (saved.today || 0),
@@ -1118,7 +1136,7 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","mediaUrl","bgmTitle","theme","soundPattern","language","rewardOn","rewardType","rewardImage"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","dayBoundaryHour","mediaUrl","bgmTitle","theme","soundPattern","language","rewardOn","rewardType","rewardImage"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
@@ -1358,7 +1376,7 @@
     save();
   });
   $$(".mode").forEach(b => b.onclick = () => setMode(b.dataset.mode));
-  [els.focusMin, els.shortMin, els.longMin, els.targetRounds, els.logLimit].forEach(input => {
+  [els.focusMin, els.shortMin, els.longMin, els.targetRounds, els.logLimit, els.dayBoundaryHour].forEach(input => {
     input.addEventListener("change", () => {
       save();
       if (!running) remainingMs = durationMs();
