@@ -30,6 +30,13 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - 小窓表示の配色追従
 - トマトのブラウザアイコン
 
+## YouTube / YouTube Music の使い方
+
+1. `YouTube URL` 欄に YouTube または YouTube Music の URL を入れます。
+2. `プレイヤーで表示` を押すと、PC ではタイマー右側、スマホではタイマー下側に埋め込みプレイヤーが表示されます。
+3. `停止` を押すと、埋め込みプレイヤーを空にして再生を止めます。
+4. アプリ外で開きたい場合は、`別タブでYouTube` または `別タブでMusic` を使います。
+
 ## やらないこと
 
 - Google アカウントへの直接ログインや自動同期
