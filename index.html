@@ -203,6 +203,7 @@
               <a id="openYoutubeTab" href="https://www.youtube.com/" target="_blank" rel="noopener" data-i18n="openYoutubeTab">別タブでYouTube</a>
               <a id="openMusicTab" href="https://music.youtube.com/" target="_blank" rel="noopener" data-i18n="openMusicTab">別タブでMusic</a>
             </div>
+            <div class="info-note"><strong>i</strong><span data-i18n="playlistNote">再生リストURLなら連続再生します。単体動画URLはその動画だけ再生します。</span></div>
             <label class="section"><span data-i18n="bgmTitle">BGMタイトル</span>
               <input id="bgmTitle" data-i18n-placeholder="bgmTitlePlaceholder" placeholder="例：作業用BGM / 推し曲タイトル">
             </label>
@@ -369,6 +370,8 @@
       playerPlaceholder:"ここにYouTubeプレイヤーを表示します。",
       openYoutubeTab:"別タブでYouTube", openMusicTab:"別タブでMusic",
       embedUnavailable:"このURLはアプリ内プレイヤーで表示できません。別タブ表示を使ってください。",
+      localEmbedMayFail:"ローカルファイルではYouTube埋め込みがエラー153になる場合があります。GitHub Pages版か別タブ表示を使ってください。",
+      playlistNote:"再生リストURLなら連続再生します。単体動画URLはその動画だけ再生します。",
       bgmTitle:"BGMタイトル", bgmTitlePlaceholder:"例：作業用BGM / 推し曲タイトル",
       bgmTitleNote:"ローカル稼働版では動画タイトルを自動取得しないため、必要なら手入力してください。",
       jsonExported:"JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。",
@@ -408,6 +411,8 @@
       playerPlaceholder:"The YouTube player will appear here.",
       openYoutubeTab:"YouTube in new tab", openMusicTab:"Music in new tab",
       embedUnavailable:"This URL cannot be shown in the in-app player. Use the new-tab buttons instead.",
+      localEmbedMayFail:"YouTube embeds may show Error 153 from local files. Use the GitHub Pages version or the new-tab buttons.",
+      playlistNote:"Playlist URLs play continuously. Single video URLs play only that video.",
       bgmTitle:"BGM title", bgmTitlePlaceholder:"e.g. work BGM / favorite track title",
       bgmTitleNote:"The local version does not auto-fetch video titles, so enter one manually if needed.",
       jsonExported:"Exported JSON. Put it on Google Drive and import it in another browser.",
@@ -907,7 +912,8 @@
     const embed = youtubeEmbedUrl(url);
     if (embed) {
       els.player.classList.remove("empty");
-      els.player.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="YouTube"></iframe>`;
+      els.player.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen title="YouTube"></iframe>`;
+      if (window.location.protocol === "file:") setHelp(t("localEmbedMayFail"), "warn");
     } else {
       setHelp(t("embedUnavailable"), "warn");
     }
@@ -943,14 +949,26 @@
     try {
       const url = new URL(raw);
       const host = url.hostname.replace(/^www\./, "");
+      const isYoutube = host === "youtu.be" || host.endsWith("youtube.com");
+      if (!isYoutube) return "";
+      const list = url.searchParams.get("list") || "";
       let id = "";
       if (host === "youtu.be") id = url.pathname.slice(1);
-      if (host.endsWith("youtube.com") || host === "music.youtube.com") {
+      if (host.endsWith("youtube.com")) {
         id = url.searchParams.get("v") || "";
         if (!id && url.pathname.startsWith("/live/")) id = url.pathname.split("/")[2] || "";
         if (!id && url.pathname.startsWith("/shorts/")) id = url.pathname.split("/")[2] || "";
       }
-      return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1` : "";
+      if (id) {
+        const params = new URLSearchParams({autoplay:"1"});
+        if (list) params.set("list", list);
+        return `https://www.youtube.com/embed/${encodeURIComponent(id)}?${params}`;
+      }
+      if (list) {
+        const params = new URLSearchParams({autoplay:"1", listType:"playlist", list});
+        return `https://www.youtube.com/embed?${params}`;
+      }
+      return "";
     } catch {
       return "";
     }
