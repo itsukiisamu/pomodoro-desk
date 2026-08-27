@@ -109,6 +109,19 @@
     .toggles input{width:auto; min-height:auto}
     .media-row{display:grid; gap:8px; margin-top:12px}
     .media-actions{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+    .stock-panel summary{display:flex; align-items:center; justify-content:space-between; gap:8px}
+    .stock-panel summary::-webkit-details-marker{display:none}
+    .stock-toggle{display:inline-block; width:1.2em; color:var(--text); font-size:12px}
+    .stock-toggle::before{content:"▶"}
+    .stock-panel[open] .stock-toggle::before{content:"▼"}
+    .stock-panel > button{margin-top:10px; width:100%}
+    .stock-head h2{font-size:13px; margin:0}
+    .stock-list{display:grid; gap:8px; max-height:220px; overflow:auto; padding-right:4px}
+    .stock-item{border:1px solid var(--line); background:var(--card-bg); border-radius:8px; padding:9px; display:grid; gap:7px}
+    .stock-title{font-size:13px; font-weight:700; overflow-wrap:anywhere}
+    .stock-meta{font-size:11px; color:var(--muted); overflow-wrap:anywhere}
+    .stock-actions{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px}
+    .stock-actions button{min-height:34px; padding:7px 8px; font-size:12px}
     .info-note{font-size:12px; color:var(--muted); line-height:1.55; margin-top:8px}
     .info-note strong{display:inline-grid; place-items:center; width:18px; height:18px; border-radius:50%; background:var(--panel2); color:var(--text); font-size:12px; margin-right:5px}
     .player{margin-top:10px; aspect-ratio:16/9; background:var(--player-bg); border:1px solid var(--line); border-radius:8px; overflow:hidden}
@@ -136,7 +149,7 @@
     #importFile{display:none}
     @media(max-width:1040px){.workbench{grid-template-columns:1fr}}
     @media(max-width:820px){body{padding:12px}}
-    @media(max-width:540px){.header{padding:16px}.main,.side{padding:16px}.primary,.toolbar,.grid-3,.links{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.start{grid-column:auto}}
+    @media(max-width:540px){.header{padding:16px}.main,.side{padding:16px}.primary,.toolbar,.grid-3,.links,.stock-actions{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.start{grid-column:auto}}
   </style>
 </head>
 <body>
@@ -209,6 +222,14 @@
               <input id="bgmTitle" data-i18n-placeholder="bgmTitlePlaceholder" placeholder="例：作業用BGM / 推し曲タイトル">
             </label>
             <div class="info-note"><strong>i</strong><span data-i18n="bgmTitleNote">ローカル稼働版では動画タイトルを自動取得しないため、必要なら手入力してください。</span></div>
+            <details class="stock-panel">
+              <summary>
+                <span class="summary-label"><span class="stock-toggle" aria-hidden="true"></span><span data-i18n="mediaStock">動画stock</span></span>
+                <span class="small" id="stockCount">0 / 20</span>
+              </summary>
+              <button id="saveStock" type="button" data-i18n="saveStock">今の動画をstock</button>
+              <div id="stockList" class="stock-list section"></div>
+            </details>
           </div>
         </div>
 
@@ -322,6 +343,7 @@
     rewardOn: $("#rewardOn"), rewardType: $("#rewardType"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), bgmTitle: $("#bgmTitle"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     openYoutubeTab: $("#openYoutubeTab"), openMusicTab: $("#openMusicTab"), openUrlTab: $("#openUrlTab"),
+    saveStock: $("#saveStock"), stockList: $("#stockList"), stockCount: $("#stockCount"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
     exportCsv: $("#exportCsv"), exportJson: $("#exportJson"), shareJson: $("#shareJson"),
     importJson: $("#importJson"), importFile: $("#importFile"), exportCard: $("#exportCard"),
@@ -372,6 +394,9 @@
       stopPlayer:"停止", stopMediaTitle:"埋め込み再生を停止",
       playerPlaceholder:"ここにYouTubeプレイヤーを表示します。",
       mediaUrlLabel:"動画URL",
+      mediaStock:"動画stock", saveStock:"今の動画をstock", loadStock:"呼び出し", editStock:"タイトル編集", deleteStock:"削除",
+      emptyStock:"まだstockはありません。", stockSaved:"動画stockに保存しました。", stockNoUrl:"動画URLを入れてからstockしてください。",
+      stockTitlePrompt:"stock名を入力してください。", stockDeleted:"動画stockを削除しました。",
       openYoutubeTab:"別タブでYouTube", openMusicTab:"別タブでMusic", openUrlTab:"別タブで開く",
       embedUnavailable:"このURLはアプリ内プレイヤーで表示できません。別タブ表示を使ってください。",
       localEmbedMayFail:"ローカルファイルではYouTubeやTwitchの埋め込みが失敗する場合があります。GitHub Pages版か別タブ表示を使ってください。",
@@ -414,6 +439,9 @@
       stopPlayer:"Stop", stopMediaTitle:"Stop embedded playback",
       playerPlaceholder:"The YouTube player will appear here.",
       mediaUrlLabel:"Video URL",
+      mediaStock:"Video stock", saveStock:"Save current video", loadStock:"Load", editStock:"Edit title", deleteStock:"Delete",
+      emptyStock:"No videos stocked yet.", stockSaved:"Saved to video stock.", stockNoUrl:"Enter a video URL before stocking it.",
+      stockTitlePrompt:"Enter a stock title.", stockDeleted:"Deleted from video stock.",
       openYoutubeTab:"YouTube in new tab", openMusicTab:"Music in new tab", openUrlTab:"Open URL",
       embedUnavailable:"This URL cannot be shown in the in-app player. Use the new-tab buttons instead.",
       localEmbedMayFail:"YouTube and Twitch embeds may fail from local files. Use the GitHub Pages version or the new-tab buttons.",
@@ -454,6 +482,7 @@
       } catch {}
     }
     state ||= {};
+    state.mediaStock ||= [];
     if (state.date !== dateKey(new Date(), state)) {
       state.date = dateKey(new Date(), state);
       state.today = 0;
@@ -513,6 +542,7 @@
       rewardOn: els.rewardOn.checked,
       rewardType: els.rewardType.value,
       rewardImage: saved.rewardImage || "",
+      mediaStock: saved.mediaStock || [],
       logs: saved.logs || []
     };
   }
@@ -590,6 +620,7 @@
     els.logCount.textContent = t("logsCount")((saved.logs || []).length);
     $$(".mode").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
     renderLogs();
+    renderStock();
     updatePlayerPlaceholder();
     updateMediaLinks();
     renderPiP(text);
@@ -612,6 +643,110 @@
         ${log.bgmTitle || log.bgmUrl ? `<div class="log-top">${escapeHtml(log.bgmTitle || "BGM")} ${log.bgmUrl ? "· URL" : ""}</div>` : ""}
       </div>
     `).join("");
+  }
+
+  function renderStock(){
+    const stock = saved.mediaStock || [];
+    els.stockCount.textContent = `${stock.length} / 20`;
+    if (!stock.length) {
+      els.stockList.innerHTML = `<div class="empty-log">${escapeHtml(t("emptyStock"))}</div>`;
+      return;
+    }
+    els.stockList.innerHTML = stock.map(item => `
+      <div class="stock-item" data-stock-id="${escapeHtml(item.id)}">
+        <div class="stock-title">${escapeHtml(item.title || stockFallbackTitle(item.url))}</div>
+        <div class="stock-meta">${escapeHtml(item.url)}<br>${escapeHtml(formatStockMeta(item))}</div>
+        <div class="stock-actions">
+          <button type="button" data-stock-action="load" data-stock-id="${escapeHtml(item.id)}">${escapeHtml(t("loadStock"))}</button>
+          <button type="button" data-stock-action="edit" data-stock-id="${escapeHtml(item.id)}">${escapeHtml(t("editStock"))}</button>
+          <button type="button" data-stock-action="delete" data-stock-id="${escapeHtml(item.id)}">${escapeHtml(t("deleteStock"))}</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function formatStockMeta(item){
+    const count = Number(item.count) || 0;
+    const used = item.lastUsedAt ? new Date(item.lastUsedAt).toLocaleString("ja-JP", {month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit"}) : "";
+    return used ? `${count}回 · ${used}` : `${count}回`;
+  }
+
+  function stockFallbackTitle(url){
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      return t("untitled");
+    }
+  }
+
+  function saveCurrentStock(){
+    const url = els.mediaUrl.value.trim();
+    if (!url) {
+      setHelp(t("stockNoUrl"), "warn");
+      return;
+    }
+    upsertStock(url, els.bgmTitle.value.trim());
+    save();
+    renderStock();
+    setHelp(t("stockSaved"), "ok");
+  }
+
+  function upsertStock(url, title = ""){
+    const now = Date.now();
+    const normalized = normalizeMediaUrl(url);
+    const stock = [...(saved.mediaStock || [])];
+    const existing = stock.find(item => normalizeMediaUrl(item.url) === normalized);
+    if (existing) {
+      existing.url = url;
+      if (title) existing.title = title;
+      existing.count = (Number(existing.count) || 0) + 1;
+      existing.lastUsedAt = now;
+    } else {
+      stock.unshift({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(now),
+        title: title || stockFallbackTitle(url),
+        url,
+        count: 1,
+        lastUsedAt: now
+      });
+    }
+    saved.mediaStock = stock
+      .sort((a, b) => (Number(b.lastUsedAt) || 0) - (Number(a.lastUsedAt) || 0))
+      .slice(0, 20);
+  }
+
+  function normalizeMediaUrl(url){
+    return String(url || "").trim();
+  }
+
+  function handleStockClick(event){
+    const button = event.target.closest("[data-stock-action]");
+    if (!button) return;
+    const item = (saved.mediaStock || []).find(stock => stock.id === button.dataset.stockId);
+    if (!item) return;
+    if (button.dataset.stockAction === "load") {
+      els.mediaUrl.value = item.url || "";
+      els.bgmTitle.value = item.title || "";
+      item.count = (Number(item.count) || 0) + 1;
+      item.lastUsedAt = Date.now();
+      save();
+      render();
+      return;
+    }
+    if (button.dataset.stockAction === "edit") {
+      const next = prompt(t("stockTitlePrompt"), item.title || "");
+      if (next === null) return;
+      item.title = next.trim() || stockFallbackTitle(item.url);
+      save();
+      renderStock();
+      return;
+    }
+    if (button.dataset.stockAction === "delete") {
+      saved.mediaStock = (saved.mediaStock || []).filter(stock => stock.id !== item.id);
+      save();
+      renderStock();
+      setHelp(t("stockDeleted"), "ok");
+    }
   }
 
   function escapeHtml(text){
@@ -920,9 +1055,12 @@
     save();
     const embed = mediaEmbedUrl(url);
     if (embed) {
+      upsertStock(url, els.bgmTitle.value.trim());
+      save();
       els.player.classList.remove("empty");
       els.player.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen title="Media player"></iframe>`;
       if (window.location.protocol === "file:") setHelp(t("localEmbedMayFail"), "warn");
+      renderStock();
     } else {
       setHelp(t("embedUnavailable"), "warn");
     }
@@ -1240,7 +1378,7 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","dayBoundaryHour","mediaUrl","bgmTitle","theme","soundPattern","language","autoNext","soundOn","stopMediaOnBreak","rewardOn","rewardType","rewardImage"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","dayBoundaryHour","mediaUrl","bgmTitle","mediaStock","theme","soundPattern","language","autoNext","soundOn","stopMediaOnBreak","rewardOn","rewardType","rewardImage"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
@@ -1417,6 +1555,8 @@
   els.notify.onclick = requestNotify;
   els.openMedia.onclick = openMedia;
   els.stopMedia.onclick = stopMedia;
+  els.saveStock.onclick = saveCurrentStock;
+  els.stockList.onclick = handleStockClick;
   els.testSound.onclick = playSelectedSound;
   els.previewReward.onclick = () => showReward(true);
   els.closeReward.onclick = hideReward;
