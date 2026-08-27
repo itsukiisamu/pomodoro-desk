@@ -93,7 +93,7 @@
     .label{font-size:12px; color:var(--muted); margin-bottom:5px}
     .value{font-size:22px; font-weight:780; font-variant-numeric:tabular-nums}
     .toolbar{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
-    .links{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px}
+    .links{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px}
     .links a{display:block; text-align:center; text-decoration:none; color:var(--text); background:var(--panel2); padding:11px; border-radius:8px; min-height:42px}
     .section{border-top:1px solid var(--line); padding-top:16px; margin-top:16px}
     .media-pane.section{margin-top:0}
@@ -136,7 +136,7 @@
     #importFile{display:none}
     @media(max-width:1040px){.workbench{grid-template-columns:1fr}}
     @media(max-width:820px){body{padding:12px}}
-    @media(max-width:540px){.header{padding:16px}.main,.side{padding:16px}.primary,.toolbar,.grid-3{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.start{grid-column:auto}}
+    @media(max-width:540px){.header{padding:16px}.main,.side{padding:16px}.primary,.toolbar,.grid-3,.links{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.start{grid-column:auto}}
   </style>
 </head>
 <body>
@@ -190,7 +190,7 @@
           </div>
 
           <div class="media-pane section">
-            <label><span>YouTube URL</span></label>
+            <label><span data-i18n="mediaUrlLabel">動画URL</span></label>
             <div class="media-row">
               <input id="mediaUrl" placeholder="https://www.youtube.com/watch?v=..." />
               <div class="media-actions">
@@ -202,8 +202,9 @@
             <div class="links">
               <a id="openYoutubeTab" href="https://www.youtube.com/" target="_blank" rel="noopener" data-i18n="openYoutubeTab">別タブでYouTube</a>
               <a id="openMusicTab" href="https://music.youtube.com/" target="_blank" rel="noopener" data-i18n="openMusicTab">別タブでMusic</a>
+              <a id="openUrlTab" href="https://www.youtube.com/" target="_blank" rel="noopener" data-i18n="openUrlTab">別タブで開く</a>
             </div>
-            <div class="info-note"><strong>i</strong><span data-i18n="playlistNote">再生リストURLなら連続再生します。単体動画URLはその動画だけ再生します。</span></div>
+            <div class="info-note"><strong>i</strong><span data-i18n="playlistNote">YouTube再生リストURLなら連続再生します。TwitchはGitHub Pages版で確認してください。</span></div>
             <label class="section"><span data-i18n="bgmTitle">BGMタイトル</span>
               <input id="bgmTitle" data-i18n-placeholder="bgmTitlePlaceholder" placeholder="例：作業用BGM / 推し曲タイトル">
             </label>
@@ -248,6 +249,7 @@
           <div class="toggles">
             <label><input id="autoNext" type="checkbox"> <span data-i18n="autoNext">終了後に次を自動開始</span></label>
             <label><input id="soundOn" type="checkbox" checked> <span data-i18n="soundOn">終了音</span></label>
+            <label><input id="stopMediaOnBreak" type="checkbox" checked> <span data-i18n="stopMediaOnBreak">休憩に入ったら動画を停止</span></label>
             <label><input id="rewardOn" type="checkbox" checked> <span data-i18n="rewardOn">集中完了時にご褒美画像</span></label>
           </div>
           <div class="section">
@@ -316,9 +318,10 @@
     focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"), dayBoundaryHour: $("#dayBoundaryHour"),
     theme: $("#theme"), soundPattern: $("#soundPattern"), testSound: $("#testSound"), language: $("#language"),
-    autoNext: $("#autoNext"), soundOn: $("#soundOn"), rewardOn: $("#rewardOn"), rewardType: $("#rewardType"), envBadge: $("#envBadge"),
+    autoNext: $("#autoNext"), soundOn: $("#soundOn"), stopMediaOnBreak: $("#stopMediaOnBreak"),
+    rewardOn: $("#rewardOn"), rewardType: $("#rewardType"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), bgmTitle: $("#bgmTitle"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
-    openYoutubeTab: $("#openYoutubeTab"), openMusicTab: $("#openMusicTab"),
+    openYoutubeTab: $("#openYoutubeTab"), openMusicTab: $("#openMusicTab"), openUrlTab: $("#openUrlTab"),
     player: $("#player"), logList: $("#logList"), logCount: $("#logCount"),
     exportCsv: $("#exportCsv"), exportJson: $("#exportJson"), shareJson: $("#shareJson"),
     importJson: $("#importJson"), importFile: $("#importFile"), exportCard: $("#exportCard"),
@@ -353,7 +356,7 @@
       soundPattern:"終了音タイプ", soundChime3:"チャイム 3秒", soundChime5:"チャイム 5秒",
       soundChime10:"チャイム 10秒", soundCq1:"CQ音 1回", soundCq3:"CQ音 3回",
       testSound:"試聴",
-      autoNext:"終了後に次を自動開始", soundOn:"終了音", rewardOn:"集中完了時にご褒美画像",
+      autoNext:"終了後に次を自動開始", soundOn:"終了音", stopMediaOnBreak:"休憩に入ったら動画を停止", rewardOn:"集中完了時にご褒美画像",
       rewardType:"完了後の表示", rewardTypeImage:"ご褒美画像", rewardTypeTunnel:"目休めトンネル", rewardTypeSolar:"トマト宇宙",
       rewardImage:"ご褒美画像", previewReward:"表示テスト", clearReward:"画像削除", rewardTitle:"おつかれさま！", closeReward:"閉じる",
       log:"ログ", share:"共有", import:"読込", exportCard:"成果PNG",
@@ -368,10 +371,11 @@
       showPlayer:"プレイヤーで表示", showPlayerTitle:"下にYouTubeプレイヤーを表示",
       stopPlayer:"停止", stopMediaTitle:"埋め込み再生を停止",
       playerPlaceholder:"ここにYouTubeプレイヤーを表示します。",
-      openYoutubeTab:"別タブでYouTube", openMusicTab:"別タブでMusic",
+      mediaUrlLabel:"動画URL",
+      openYoutubeTab:"別タブでYouTube", openMusicTab:"別タブでMusic", openUrlTab:"別タブで開く",
       embedUnavailable:"このURLはアプリ内プレイヤーで表示できません。別タブ表示を使ってください。",
-      localEmbedMayFail:"ローカルファイルではYouTube埋め込みがエラー153になる場合があります。GitHub Pages版か別タブ表示を使ってください。",
-      playlistNote:"再生リストURLなら連続再生します。単体動画URLはその動画だけ再生します。",
+      localEmbedMayFail:"ローカルファイルではYouTubeやTwitchの埋め込みが失敗する場合があります。GitHub Pages版か別タブ表示を使ってください。",
+      playlistNote:"YouTube再生リストURLなら連続再生します。TwitchはGitHub Pages版で確認してください。",
       bgmTitle:"BGMタイトル", bgmTitlePlaceholder:"例：作業用BGM / 推し曲タイトル",
       bgmTitleNote:"ローカル稼働版では動画タイトルを自動取得しないため、必要なら手入力してください。",
       jsonExported:"JSONを書き出しました。Google Driveに置けば別ブラウザへ読込できます。",
@@ -394,7 +398,7 @@
       soundPattern:"End sound type", soundChime3:"Chime 3 sec", soundChime5:"Chime 5 sec",
       soundChime10:"Chime 10 sec", soundCq1:"CQ once", soundCq3:"CQ three times",
       testSound:"Test",
-      autoNext:"Auto-start next session", soundOn:"End sound", rewardOn:"Reward image after focus",
+      autoNext:"Auto-start next session", soundOn:"End sound", stopMediaOnBreak:"Stop video on break", rewardOn:"Reward image after focus",
       rewardType:"After-focus display", rewardTypeImage:"Reward image", rewardTypeTunnel:"Eye-rest tunnel", rewardTypeSolar:"Tomato space",
       rewardImage:"Reward image", previewReward:"Preview", clearReward:"Clear image", rewardTitle:"Nice work!", closeReward:"Close",
       log:"Log", share:"Share", import:"Import", exportCard:"Card PNG",
@@ -409,10 +413,11 @@
       showPlayer:"Show player", showPlayerTitle:"Show the YouTube player below",
       stopPlayer:"Stop", stopMediaTitle:"Stop embedded playback",
       playerPlaceholder:"The YouTube player will appear here.",
-      openYoutubeTab:"YouTube in new tab", openMusicTab:"Music in new tab",
+      mediaUrlLabel:"Video URL",
+      openYoutubeTab:"YouTube in new tab", openMusicTab:"Music in new tab", openUrlTab:"Open URL",
       embedUnavailable:"This URL cannot be shown in the in-app player. Use the new-tab buttons instead.",
-      localEmbedMayFail:"YouTube embeds may show Error 153 from local files. Use the GitHub Pages version or the new-tab buttons.",
-      playlistNote:"Playlist URLs play continuously. Single video URLs play only that video.",
+      localEmbedMayFail:"YouTube and Twitch embeds may fail from local files. Use the GitHub Pages version or the new-tab buttons.",
+      playlistNote:"YouTube playlist URLs play continuously. Check Twitch on the GitHub Pages version.",
       bgmTitle:"BGM title", bgmTitlePlaceholder:"e.g. work BGM / favorite track title",
       bgmTitleNote:"The local version does not auto-fetch video titles, so enter one manually if needed.",
       jsonExported:"Exported JSON. Put it on Google Drive and import it in another browser.",
@@ -476,6 +481,7 @@
     els.bgmTitle.value = saved.bgmTitle || "";
     els.autoNext.checked = !!saved.autoNext;
     els.soundOn.checked = saved.soundOn !== false;
+    els.stopMediaOnBreak.checked = saved.stopMediaOnBreak !== false;
     els.rewardOn.checked = saved.rewardOn !== false;
     els.rewardType.value = saved.rewardType || "image";
     updateRewardPreview();
@@ -503,6 +509,7 @@
       bgmTitle: els.bgmTitle.value,
       autoNext: els.autoNext.checked,
       soundOn: els.soundOn.checked,
+      stopMediaOnBreak: els.stopMediaOnBreak.checked,
       rewardOn: els.rewardOn.checked,
       rewardType: els.rewardType.value,
       rewardImage: saved.rewardImage || "",
@@ -685,6 +692,7 @@
       const target = clamp(els.targetRounds.value, 1, 12);
       const next = saved.round >= target ? "long" : "short";
       if (saved.round >= target) saved.round = 0;
+      if (els.stopMediaOnBreak.checked) stopMedia();
       mode = next;
     } else {
       addLog({mode:modeLabel(finished), minutes, task:t("breakTask"), startedAt});
@@ -750,6 +758,7 @@
       const goesLong = saved.round >= target;
       mode = goesLong ? "long" : "short";
       if (goesLong) saved.round = 0;
+      if (els.stopMediaOnBreak.checked) stopMedia();
     } else {
       mode = "focus";
     }
@@ -909,10 +918,10 @@
     const url = els.mediaUrl.value.trim();
     if (!url) return;
     save();
-    const embed = youtubeEmbedUrl(url);
+    const embed = mediaEmbedUrl(url);
     if (embed) {
       els.player.classList.remove("empty");
-      els.player.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen title="YouTube"></iframe>`;
+      els.player.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen title="Media player"></iframe>`;
       if (window.location.protocol === "file:") setHelp(t("localEmbedMayFail"), "warn");
     } else {
       setHelp(t("embedUnavailable"), "warn");
@@ -920,6 +929,9 @@
   }
 
   function stopMedia(){
+    const iframe = els.player.querySelector("iframe");
+    if (iframe) iframe.src = "about:blank";
+    els.player.innerHTML = "";
     els.player.classList.add("empty");
     updatePlayerPlaceholder();
   }
@@ -943,6 +955,11 @@
     } catch {}
     els.openYoutubeTab.href = youtubeHref;
     els.openMusicTab.href = musicHref;
+    els.openUrlTab.href = raw || youtubeHome;
+  }
+
+  function mediaEmbedUrl(raw){
+    return youtubeEmbedUrl(raw) || niconicoEmbedUrl(raw) || twitchEmbedUrl(raw) || soundCloudEmbedUrl(raw);
   }
 
   function youtubeEmbedUrl(raw){
@@ -951,7 +968,7 @@
       const host = url.hostname.replace(/^www\./, "");
       const isYoutube = host === "youtu.be" || host.endsWith("youtube.com");
       if (!isYoutube) return "";
-      const list = url.searchParams.get("list") || "";
+      const list = normalizedYoutubeList(url.searchParams.get("list") || "");
       let id = "";
       if (host === "youtu.be") id = url.pathname.slice(1);
       if (host.endsWith("youtube.com")) {
@@ -969,6 +986,75 @@
         return `https://www.youtube.com/embed?${params}`;
       }
       return "";
+    } catch {
+      return "";
+    }
+  }
+
+  function normalizedYoutubeList(list){
+    const value = String(list || "").trim();
+    if (!value || value === "WL") return "";
+    if (/^(PL|OL|UU|LL|RD)[\w-]+$/.test(value)) return value;
+    return "";
+  }
+
+  function niconicoEmbedUrl(raw){
+    try {
+      const url = new URL(raw);
+      const host = url.hostname.replace(/^www\./, "");
+      if (!host.endsWith("nicovideo.jp")) return "";
+      const match = url.pathname.match(/\/watch\/([a-z]{2}\d+|\d+)/i);
+      return match ? `https://embed.nicovideo.jp/watch/${encodeURIComponent(match[1])}` : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function twitchEmbedUrl(raw){
+    try {
+      const url = new URL(raw);
+      const host = url.hostname.replace(/^www\./, "");
+      if (!host.endsWith("twitch.tv")) return "";
+      const parts = url.pathname.split("/").filter(Boolean);
+      const params = new URLSearchParams({parent:twitchParent(), autoplay:"true"});
+      if (host === "clips.twitch.tv") {
+        if (!parts[0]) return "";
+        params.set("clip", parts[0]);
+        return `https://clips.twitch.tv/embed?${params}`;
+      }
+      if (parts[0] === "videos" && parts[1]) {
+        params.set("video", `v${parts[1].replace(/^v/i, "")}`);
+        return `https://player.twitch.tv/?${params}`;
+      }
+      if (parts[0]) {
+        params.set("channel", parts[0]);
+        return `https://player.twitch.tv/?${params}`;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
+  function twitchParent(){
+    return window.location.hostname || "itsukiisamu.github.io";
+  }
+
+  function soundCloudEmbedUrl(raw){
+    try {
+      const url = new URL(raw);
+      const host = url.hostname.replace(/^www\./, "");
+      if (!host.endsWith("soundcloud.com")) return "";
+      const params = new URLSearchParams({
+        url: raw,
+        auto_play: "true",
+        hide_related: "false",
+        show_comments: "false",
+        show_user: "true",
+        show_reposts: "false",
+        visual: "true"
+      });
+      return `https://w.soundcloud.com/player/?${params}`;
     } catch {
       return "";
     }
@@ -1154,7 +1240,7 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","dayBoundaryHour","mediaUrl","bgmTitle","theme","soundPattern","language","rewardOn","rewardType","rewardImage"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","dayBoundaryHour","mediaUrl","bgmTitle","theme","soundPattern","language","autoNext","soundOn","stopMediaOnBreak","rewardOn","rewardType","rewardImage"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
@@ -1401,7 +1487,7 @@
       render();
     });
   });
-  [els.autoNext, els.soundOn, els.rewardOn, els.rewardType, els.soundPattern].forEach(input => input.addEventListener("change", save));
+  [els.autoNext, els.soundOn, els.stopMediaOnBreak, els.rewardOn, els.rewardType, els.soundPattern].forEach(input => input.addEventListener("change", save));
 
   els.envBadge.textContent = window.isSecureContext ? "secure" : "local file";
   if ("Notification" in window && Notification.permission === "granted") els.notify.textContent = t("notifyOn");

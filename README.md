@@ -1,6 +1,6 @@
 # Pomodoro Desk
 
-YouTube や YouTube Music を開きながら使う、単一 HTML のポモドーロタイマーです。
+YouTube や YouTube Music などを開きながら使う、単一 HTML のポモドーロタイマーです。
 ブラウザだけで動き、集中ログは localStorage に保存します。
 
 https://itsukiisamu.github.io/pomodoro-desk/
@@ -18,8 +18,9 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - 今日の作業ログを正方形PNGカードとして書き出し
 - JSON でのログ読み込み
 - Google Drive を開いて、書き出したログファイルを共有
-- YouTube / YouTube Music への導線と、動画 URL の埋め込み表示
+- YouTube / YouTube Music / ニコニコ動画 / Twitch / SoundCloudへの導線と、動画 URL の埋め込み表示
 - 埋め込み表示した YouTube 動画の停止
+- 集中終了後、休憩に入るタイミングでの動画停止
 - BGMタイトルの手入力とログ保存
 - 通知、終了音、小窓表示
 - 終了音タイプの変更（チャイム 3秒 / 5秒 / 10秒、CQ音 1回 / 3回）
@@ -31,15 +32,15 @@ https://itsukiisamu.github.io/pomodoro-desk/
 - 小窓表示の配色追従
 - トマトのブラウザアイコン
 
-## YouTube / YouTube Music の使い方
+## 動画・音楽URLの使い方
 
-1. `YouTube URL` 欄に YouTube または YouTube Music の URL を入れます。
+1. `動画URL` 欄に YouTube、YouTube Music、ニコニコ動画、Twitch、SoundCloud の URL を入れます。
 2. `プレイヤーで表示` を押すと、PC ではタイマー右側、スマホではタイマー下側に埋め込みプレイヤーが表示されます。
 3. `停止` を押すと、埋め込みプレイヤーを空にして再生を止めます。
-4. アプリ外で開きたい場合は、`別タブでYouTube` または `別タブでMusic` を使います。
-5. 再生リストURL、または `list=` 付きの動画URLなら、埋め込みプレイヤーで連続再生します。
+4. アプリ外で開きたい場合は、`別タブでYouTube`、`別タブでMusic`、または `別タブで開く` を使います。
+5. YouTube再生リストURL、または `list=PL...` 付きの動画URLなら、埋め込みプレイヤーで連続再生します。`list=WL` は単体動画として扱います。
 
-ローカルファイルとして直接開いた場合、YouTube側の制限で埋め込みプレイヤーが `エラー153` になることがあります。その場合は GitHub Pages 版、または別タブ表示を使ってください。
+ローカルファイルとして直接開いた場合、YouTube側の制限で埋め込みプレイヤーが `エラー153` になることがあります。Twitchも埋め込み元ドメイン指定が必要なため、GitHub Pages版での確認が向いています。うまく埋め込めない場合は、別タブ表示を使ってください。
 
 ## やらないこと
 
