@@ -267,10 +267,19 @@
               </span>
             </label>
           </div>
+          <div class="grid-2">
+            <label><span data-i18n="mediaBreakAction">休憩時の動画操作</span>
+              <select id="mediaBreakAction">
+                <option value="pause" data-i18n="mediaBreakPause">一時停止</option>
+                <option value="stop" data-i18n="mediaBreakStop">停止</option>
+                <option value="none" data-i18n="mediaBreakNone">何もしない</option>
+              </select>
+            </label>
+          </div>
           <div class="toggles">
             <label><input id="autoNext" type="checkbox"> <span data-i18n="autoNext">終了後に次を自動開始</span></label>
             <label><input id="soundOn" type="checkbox" checked> <span data-i18n="soundOn">終了音</span></label>
-            <label><input id="stopMediaOnBreak" type="checkbox" checked> <span data-i18n="stopMediaOnBreak">休憩に入ったら動画を停止</span></label>
+            <label><input id="autoResumeMedia" type="checkbox" checked> <span data-i18n="autoResumeMedia">次の集中開始時に動画を再開</span></label>
             <label><input id="rewardOn" type="checkbox" checked> <span data-i18n="rewardOn">集中完了時にご褒美画像</span></label>
           </div>
           <div class="section">
@@ -339,7 +348,8 @@
     focusMin: $("#focusMin"), shortMin: $("#shortMin"), longMin: $("#longMin"),
     targetRounds: $("#targetRounds"), logLimit: $("#logLimit"), dayBoundaryHour: $("#dayBoundaryHour"),
     theme: $("#theme"), soundPattern: $("#soundPattern"), testSound: $("#testSound"), language: $("#language"),
-    autoNext: $("#autoNext"), soundOn: $("#soundOn"), stopMediaOnBreak: $("#stopMediaOnBreak"),
+    autoNext: $("#autoNext"), soundOn: $("#soundOn"), mediaBreakAction: $("#mediaBreakAction"),
+    autoResumeMedia: $("#autoResumeMedia"),
     rewardOn: $("#rewardOn"), rewardType: $("#rewardType"), envBadge: $("#envBadge"),
     help: $("#help"), mediaUrl: $("#mediaUrl"), bgmTitle: $("#bgmTitle"), openMedia: $("#openMedia"), stopMedia: $("#stopMedia"),
     openYoutubeTab: $("#openYoutubeTab"), openMusicTab: $("#openMusicTab"), openUrlTab: $("#openUrlTab"),
@@ -378,7 +388,9 @@
       soundPattern:"終了音タイプ", soundChime3:"チャイム 3秒", soundChime5:"チャイム 5秒",
       soundChime10:"チャイム 10秒", soundCq1:"CQ音 1回", soundCq3:"CQ音 3回",
       testSound:"試聴",
-      autoNext:"終了後に次を自動開始", soundOn:"終了音", stopMediaOnBreak:"休憩に入ったら動画を停止", rewardOn:"集中完了時にご褒美画像",
+      autoNext:"終了後に次を自動開始", soundOn:"終了音", mediaBreakAction:"休憩時の動画操作",
+      mediaBreakPause:"一時停止", mediaBreakStop:"停止", mediaBreakNone:"何もしない",
+      autoResumeMedia:"次の集中開始時に動画を再開", rewardOn:"集中完了時にご褒美画像",
       rewardType:"完了後の表示", rewardTypeImage:"ご褒美画像", rewardTypeTunnel:"目休めトンネル", rewardTypeSolar:"トマト宇宙",
       rewardImage:"ご褒美画像", previewReward:"表示テスト", clearReward:"画像削除", rewardTitle:"おつかれさま！", closeReward:"閉じる",
       log:"ログ", share:"共有", import:"読込", exportCard:"成果PNG",
@@ -423,7 +435,9 @@
       soundPattern:"End sound type", soundChime3:"Chime 3 sec", soundChime5:"Chime 5 sec",
       soundChime10:"Chime 10 sec", soundCq1:"CQ once", soundCq3:"CQ three times",
       testSound:"Test",
-      autoNext:"Auto-start next session", soundOn:"End sound", stopMediaOnBreak:"Stop video on break", rewardOn:"Reward image after focus",
+      autoNext:"Auto-start next session", soundOn:"End sound", mediaBreakAction:"Video action during breaks",
+      mediaBreakPause:"Pause", mediaBreakStop:"Stop", mediaBreakNone:"Do nothing",
+      autoResumeMedia:"Resume video when focus starts", rewardOn:"Reward image after focus",
       rewardType:"After-focus display", rewardTypeImage:"Reward image", rewardTypeTunnel:"Eye-rest tunnel", rewardTypeSolar:"Tomato space",
       rewardImage:"Reward image", previewReward:"Preview", clearReward:"Clear image", rewardTitle:"Nice work!", closeReward:"Close",
       log:"Log", share:"Share", import:"Import", exportCard:"Card PNG",
@@ -510,7 +524,8 @@
     els.bgmTitle.value = saved.bgmTitle || "";
     els.autoNext.checked = !!saved.autoNext;
     els.soundOn.checked = saved.soundOn !== false;
-    els.stopMediaOnBreak.checked = saved.stopMediaOnBreak !== false;
+    els.mediaBreakAction.value = saved.mediaBreakAction || (saved.stopMediaOnBreak === false ? "none" : "pause");
+    els.autoResumeMedia.checked = saved.autoResumeMedia !== false;
     els.rewardOn.checked = saved.rewardOn !== false;
     els.rewardType.value = saved.rewardType || "image";
     updateRewardPreview();
@@ -538,7 +553,8 @@
       bgmTitle: els.bgmTitle.value,
       autoNext: els.autoNext.checked,
       soundOn: els.soundOn.checked,
-      stopMediaOnBreak: els.stopMediaOnBreak.checked,
+      mediaBreakAction: els.mediaBreakAction.value,
+      autoResumeMedia: els.autoResumeMedia.checked,
       rewardOn: els.rewardOn.checked,
       rewardType: els.rewardType.value,
       rewardImage: saved.rewardImage || "",
@@ -775,6 +791,7 @@
     remainingMs = null;
     running = true;
     interval = setInterval(tick, 250);
+    if (mode === "focus") resumeMediaForFocus();
     render();
   }
 
@@ -827,7 +844,7 @@
       const target = clamp(els.targetRounds.value, 1, 12);
       const next = saved.round >= target ? "long" : "short";
       if (saved.round >= target) saved.round = 0;
-      if (els.stopMediaOnBreak.checked) stopMedia();
+      handleMediaOnBreak();
       mode = next;
     } else {
       addLog({mode:modeLabel(finished), minutes, task:t("breakTask"), startedAt});
@@ -893,7 +910,7 @@
       const goesLong = saved.round >= target;
       mode = goesLong ? "long" : "short";
       if (goesLong) saved.round = 0;
-      if (els.stopMediaOnBreak.checked) stopMedia();
+      handleMediaOnBreak();
     } else {
       mode = "focus";
     }
@@ -1049,6 +1066,11 @@
     pipWindow.document.documentElement.style.cssText = pipThemeCss();
   }
 
+  let youtubePlayer = null;
+  let youtubePlayerReady = false;
+  let youtubeApiPromise = null;
+  let mediaResumePending = false;
+
   function openMedia(){
     const url = els.mediaUrl.value.trim();
     if (!url) return;
@@ -1057,8 +1079,13 @@
     if (embed) {
       upsertStock(url, els.bgmTitle.value.trim());
       save();
+      clearPlayerControl();
+      mediaResumePending = false;
       els.player.classList.remove("empty");
-      els.player.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen title="Media player"></iframe>`;
+      const isYoutube = !!youtubeEmbedUrl(url);
+      const id = isYoutube ? "youtubeMediaPlayer" : "";
+      els.player.innerHTML = `<iframe${id ? ` id="${id}"` : ""} src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen title="Media player"></iframe>`;
+      if (isYoutube) initializeYouTubePlayer(els.player.querySelector("iframe"));
       if (window.location.protocol === "file:") setHelp(t("localEmbedMayFail"), "warn");
       renderStock();
     } else {
@@ -1067,11 +1094,70 @@
   }
 
   function stopMedia(){
-    const iframe = els.player.querySelector("iframe");
-    if (iframe) iframe.src = "about:blank";
+    mediaResumePending = false;
+    clearPlayerControl();
     els.player.innerHTML = "";
     els.player.classList.add("empty");
     updatePlayerPlaceholder();
+  }
+
+  function handleMediaOnBreak(){
+    const action = els.mediaBreakAction.value;
+    if (action === "none" || els.player.classList.contains("empty")) return;
+    if (action === "pause" && youtubePlayer) {
+      mediaResumePending = true;
+      if (youtubePlayerReady) youtubePlayer.pauseVideo();
+      return;
+    }
+    stopMedia();
+  }
+
+  function resumeMediaForFocus(){
+    if (!mediaResumePending || !els.autoResumeMedia.checked || !youtubePlayer) return;
+    if (youtubePlayerReady) {
+      youtubePlayer.playVideo();
+      mediaResumePending = false;
+    }
+  }
+
+  function clearPlayerControl(){
+    if (youtubePlayer && typeof youtubePlayer.destroy === "function") {
+      try { youtubePlayer.destroy(); } catch {}
+    }
+    youtubePlayer = null;
+    youtubePlayerReady = false;
+  }
+
+  function initializeYouTubePlayer(iframe){
+    loadYouTubeIframeApi().then(() => {
+      if (!iframe.isConnected || iframe !== els.player.querySelector("iframe")) return;
+      youtubePlayer = new YT.Player(iframe, {
+        events: {
+          onReady: () => {
+            youtubePlayerReady = true;
+            if (mediaResumePending && mode !== "focus") youtubePlayer.pauseVideo();
+            else if (mediaResumePending && mode === "focus" && running) resumeMediaForFocus();
+          }
+        }
+      });
+    }).catch(() => {});
+  }
+
+  function loadYouTubeIframeApi(){
+    if (window.YT && typeof window.YT.Player === "function") return Promise.resolve();
+    if (youtubeApiPromise) return youtubeApiPromise;
+    youtubeApiPromise = new Promise((resolve, reject) => {
+      const previousReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof previousReady === "function") previousReady();
+        resolve();
+      };
+      const script = document.createElement("script");
+      script.src = "https://www.youtube.com/iframe_api";
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    return youtubeApiPromise;
   }
 
   function updatePlayerPlaceholder(){
@@ -1115,12 +1201,14 @@
         if (!id && url.pathname.startsWith("/shorts/")) id = url.pathname.split("/")[2] || "";
       }
       if (id) {
-        const params = new URLSearchParams({autoplay:"1"});
+        const params = new URLSearchParams({autoplay:"1", enablejsapi:"1"});
+        if (/^https?:$/.test(window.location.protocol)) params.set("origin", window.location.origin);
         if (list) params.set("list", list);
         return `https://www.youtube.com/embed/${encodeURIComponent(id)}?${params}`;
       }
       if (list) {
-        const params = new URLSearchParams({autoplay:"1", listType:"playlist", list});
+        const params = new URLSearchParams({autoplay:"1", enablejsapi:"1", listType:"playlist", list});
+        if (/^https?:$/.test(window.location.protocol)) params.set("origin", window.location.origin);
         return `https://www.youtube.com/embed?${params}`;
       }
       return "";
@@ -1378,7 +1466,7 @@
         saved.logs = [...(saved.logs || []), ...(incoming.logs || [])]
           .filter((log, index, array) => array.findIndex(x => x.id === log.id && x.endedAt === log.endedAt) === index)
           .slice(-1000);
-        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","dayBoundaryHour","mediaUrl","bgmTitle","mediaStock","theme","soundPattern","language","autoNext","soundOn","stopMediaOnBreak","rewardOn","rewardType","rewardImage"]) {
+        for (const key of ["focusMin","shortMin","longMin","targetRounds","logLimit","dayBoundaryHour","mediaUrl","bgmTitle","mediaStock","theme","soundPattern","language","autoNext","soundOn","mediaBreakAction","autoResumeMedia","stopMediaOnBreak","rewardOn","rewardType","rewardImage"]) {
           if (incoming[key] !== undefined) saved[key] = incoming[key];
         }
         hydrate();
@@ -1627,7 +1715,7 @@
       render();
     });
   });
-  [els.autoNext, els.soundOn, els.stopMediaOnBreak, els.rewardOn, els.rewardType, els.soundPattern].forEach(input => input.addEventListener("change", save));
+  [els.autoNext, els.soundOn, els.mediaBreakAction, els.autoResumeMedia, els.rewardOn, els.rewardType, els.soundPattern].forEach(input => input.addEventListener("change", save));
 
   els.envBadge.textContent = window.isSecureContext ? "secure" : "local file";
   if ("Notification" in window && Notification.permission === "granted") els.notify.textContent = t("notifyOn");
